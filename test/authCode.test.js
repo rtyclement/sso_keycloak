@@ -62,3 +62,17 @@ test('startLogin construit l\'url via buildAuthorizationUrl', async () => {
 
     assert.strictEqual(decision.url, fakeUrl.href);
 });
+
+
+test('startLogin stocke codeVerifier et state dans la session', async () => {
+    const strategy = createAuthorizationCode({
+        client:      buildFakeAuthClient(),
+        config:      {},
+        redirectUri: '/callback',
+    });
+    const session = {};
+    await strategy.startLogin({ session });
+
+    assert.strictEqual(session.pkce.codeVerifier, 'verifier-abc');
+    assert.strictEqual(session.pkce.state,        'state-123');
+});
