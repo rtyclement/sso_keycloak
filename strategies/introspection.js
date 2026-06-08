@@ -20,7 +20,7 @@ function createIntrospection(deps) {
             if (!roles.includes(deps.requiredRole))
                 return { type: 'deny', status: 403, reason: 'missing_role' };
 
-            return {};
+            return {type: 'allow', principal: data};
         },
     };
 }
