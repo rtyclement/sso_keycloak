@@ -76,3 +76,9 @@ test('startLogin stocke codeVerifier et state dans la session', async () => {
     assert.strictEqual(session.pkce.codeVerifier, 'verifier-abc');
     assert.strictEqual(session.pkce.state,        'state-123');
 });
+
+
+test('createAuthorizationCode retourne un objet avec une méthode handleCallback', () => {
+    const strategy = createAuthorizationCode({});
+    assert.strictEqual(typeof strategy.handleCallback, 'function');
+});
