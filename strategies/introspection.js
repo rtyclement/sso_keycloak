@@ -15,6 +15,11 @@ function createIntrospection(deps) {
             const data = await res.json();
 
             if (!data.active) return { type: 'deny', status: 401, reason: 'inactive_token' };
+
+            const roles = data.resource_access?.[deps.audienceClientId]?.roles ?? [];
+            if (!roles.includes(deps.requiredRole))
+                return { type: 'deny', status: 403, reason: 'missing_role' };
+
             return {};
         },
     };

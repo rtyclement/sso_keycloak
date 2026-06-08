@@ -34,3 +34,28 @@ test('authenticate retourne deny quand le token est inactif', async () => {
     assert.strictEqual(decision.type,   'deny');
     assert.strictEqual(decision.status, 401);
 });
+
+test('authenticate retourne deny quand le rôle est manquant', async () => {
+    const fakeFetch = async () => ({
+        json: async () => ({
+            active:          true,
+            resource_access: { 'mon-api': { roles: ['viewer'] } },
+        }),
+    });
+
+    const strategy = createIntrospection({
+        introspectUrl:    'https://kc.example.com/introspect',
+        clientId:         'mon-api',
+        clientSecret:     'secret',
+        audienceClientId: 'mon-api',
+        requiredRole:     'admin',
+        fetch:            fakeFetch,
+    });
+
+    const decision = await strategy.authenticate({
+        headers: { authorization: 'Bearer fake-token' },
+    });
+
+    assert.strictEqual(decision.type,   'deny');
+    assert.strictEqual(decision.status, 403);
+});
