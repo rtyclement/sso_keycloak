@@ -36,6 +36,7 @@ function createAuthorizationCode(deps) {
             const principal = { ...claims, roles };
 
             ctx.session.user = principal;
+            delete ctx.session.pkce;
             return { type: 'session', principal, redirectTo: '/' };
         },
     };

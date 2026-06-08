@@ -95,7 +95,7 @@ test('handleCallback retourne une décision de type session', async () => {
 
 const {makeJwt} = require('./Helper.test')
 
-test('handleCallback stocke le principal dans la session', async () => {
+test('handleCallback stocke le principal dans la session pour l echange de code & doit la nettoyer ensuite', async () => {
     const accessToken = makeJwt({
         sub:              'user-123',
         resource_access:  { 'mon-app': { roles: ['admin'] } },
@@ -118,4 +118,5 @@ test('handleCallback stocke le principal dans la session', async () => {
 
     assert.strictEqual(session.user.sub, 'user-123');
     assert.deepStrictEqual(session.user.roles, ['admin']);
+    assert.strictEqual(session.pkce, undefined);
 });
