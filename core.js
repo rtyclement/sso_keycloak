@@ -6,6 +6,7 @@ function required(options, key) {
 }
 async function createSso(options = {}) {
     required(options, 'issuerUrl');
+    required(options, 'clientId');
     return {};
 };
 
