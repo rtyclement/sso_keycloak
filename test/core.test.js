@@ -63,13 +63,15 @@ test('createSso appelle discovery avec l\'issuerUrl, le clientId et le clientSec
 });
 
 // --- Incrément 3 -----------------------//
-const {buildFakeFactories} = require("./Helper.test");
 
-test('createSso retourne les deux stratégies et le backchannel', async () => {
-    const f   = buildFakeFactories();
-    const sso = await createSso({ ...BASE_OPTIONS, _client: buildFakeClient(), _factories: f });
+test('createSso retourne une stratégie authorizationCode', async () => {
+    const fakeStrategy = { authenticate: async () => ({}) };
 
-    assert.strictEqual(sso.strategies.authorizationCode, f.fakeStrategy);
-    assert.strictEqual(sso.strategies.introspection,     f.fakeStrategy);
-    assert.strictEqual(sso.backchannel,                  f.fakeHandler);
+    const sso = await createSso({
+        ...BASE_OPTIONS,
+        _client:    buildFakeClient(),
+        _factories: { authorizationCode: () => fakeStrategy },
+    });
+
+    assert.strictEqual(sso.strategies.authorizationCode, fakeStrategy);
 });

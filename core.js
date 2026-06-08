@@ -18,6 +18,13 @@ async function createSso(options = {}) {
     const config = await client.discovery(new URL(options.issuerUrl), options.clientId, options.clientSecret);
     const metadata= config.serverMetadata();
 
+    const factories = options._factories ?? {};
+    const createAuthorizationCode = factories.authorizationCode ?? require('./strategies/authCode');
+
+    const strategies = {
+        authorizationCode: createAuthorizationCode()
+    }
+    cre
     return {metadata};
 };
 
