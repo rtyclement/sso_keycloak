@@ -12,7 +12,12 @@ function guard(strategy) {
         if (decision.type === 'deny')     return res.status(decision.status).end();
     };
 }
-function loginRoute(strategy)               { }
+function loginRoute(strategy) {
+    return async (req, res) => {
+        const decision = await strategy.startLogin({ session: req.session });
+        if (decision.type === 'redirect') return res.redirect(decision.url);
+    };
+}
 function callbackRoute(strategy, backchannel) { }
 function backchannelRoute(backchannel)      { }
 
