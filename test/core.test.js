@@ -109,3 +109,41 @@ test('createSso retourne un handler backchannel', async () => {
 
     assert.strictEqual(sso.backchannel, fakeHandler);
 });
+
+const {buildFakeFactories} = require("./Helper.test");
+
+test('la factory authorizationCode reçoit clientId, redirectUri, sessionStore et requiredRole', async () => {
+    const f            = buildFakeFactories();
+    const sessionStore = { get: () => {}, destroy: () => {} };
+
+    await createSso({
+        ...BASE_OPTIONS,
+        redirectUri: '/callback',
+        sessionStore,
+        _client: buildFakeClient(),
+        _factories: f,
+    });
+
+    const deps = f.received.authorizationCode;
+    assert.strictEqual(deps.clientId,     'mon-app');
+    assert.strictEqual(deps.redirectUri,  '/callback');
+    assert.strictEqual(deps.sessionStore, sessionStore);
+    assert.strictEqual(deps.requiredRole, 'admin');
+});
+
+test('la factory introspection reçoit l\'endpoint issu des métadonnées', async () => {
+    const f = buildFakeFactories();
+    await createSso({ ...BASE_OPTIONS, _client: buildFakeClient(), _factories: f });
+
+    assert.strictEqual(
+        f.received.introspection.introspectUrl,
+        FAKE_METADATA.introspection_endpoint,
+    );
+});
+
+test('la factory backchannel reçoit le jwksUri issu des métadonnées', async () => {
+    const f = buildFakeFactories();
+    await createSso({ ...BASE_OPTIONS, _client: buildFakeClient(), _factories: f });
+
+    assert.strictEqual(f.received.backchannel.jwksUri, FAKE_METADATA.jwks_uri);
+});
