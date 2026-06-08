@@ -89,3 +89,30 @@ test('handleCallback retourne une décision de type session', async () => {
 
     assert.strictEqual(decision.type, 'session');
 });
+
+const {makeJwt} = require('./Helper.test')
+
+test('handleCallback stocke le principal dans la session', async () => {
+    const accessToken = makeJwt({
+        sub:              'user-123',
+        resource_access:  { 'mon-app': { roles: ['admin'] } },
+    });
+
+    const strategy = createAuthorizationCode({
+        client:   buildFakeAuthClient({
+            authorizationCodeGrant: async () => ({ access_token: accessToken }),
+        }),
+        config:      {},
+        redirectUri: '/callback',
+        clientId:    'mon-app',
+    });
+
+    const session = { pkce: { codeVerifier: 'verifier-abc', state: 'state-123' } };
+    await strategy.handleCallback({
+        session,
+        url: new URL('https://app.example.com/callback?code=abc&state=state-123'),
+    });
+
+    assert.strictEqual(session.user.sub, 'user-123');
+    assert.deepStrictEqual(session.user.roles, ['admin']);
+});

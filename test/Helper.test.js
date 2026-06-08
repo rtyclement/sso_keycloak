@@ -38,8 +38,15 @@ function buildFakeAuthClient(overrides = {}) {
         calculatePKCECodeChallenge: async () => 'challenge-xyz',
         randomState:                () => 'state-123',
         buildAuthorizationUrl:      () => new URL('https://kc.example.com/authorize'),
+        authorizationCodeGrant:     async () => ({ access_token: '' }),
         ...overrides,
     };
 }
 
-module.exports = {FAKE_METADATA, BASE_OPTIONS, buildFakeClient,buildFakeFactories,buildFakeAuthClient};
+function makeJwt(payload) {
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256' })).toString('base64url');
+    const body   = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    return `${header}.${body}.fakesig`;
+}
+
+module.exports = {FAKE_METADATA, BASE_OPTIONS, buildFakeClient,buildFakeFactories,buildFakeAuthClient,makeJwt};
