@@ -44,7 +44,7 @@ test('createSso échoue si requireRole est absent', async () => {
 
 // --- Incrément 2 -----------------------//
 
-const {FAKE_DATA, BASE_OPTIONS, buildFakeClient} = require("./fakeClient.test");
+const {FAKE_METADATA, BASE_OPTIONS, buildFakeClient} = require("./fakeClient.test");
 
 test('createSso retourne les métadonnées issues de la discovery', async () => {
     const sso = await createSso({ ...BASE_OPTIONS, _client: buildFakeClient() });
