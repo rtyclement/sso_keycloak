@@ -44,7 +44,7 @@ test('createSso échoue si requireRole est absent', async () => {
 
 // --- Incrément 2 -----------------------//
 
-const {FAKE_METADATA, BASE_OPTIONS, buildFakeClient} = require("./fakeClient.test");
+const {FAKE_METADATA, BASE_OPTIONS, buildFakeClient, } = require("./Helper.test");
 
 test('createSso retourne les métadonnées issues de la discovery', async () => {
     const sso = await createSso({ ...BASE_OPTIONS, _client: buildFakeClient() });
@@ -60,4 +60,16 @@ test('createSso appelle discovery avec l\'issuerUrl, le clientId et le clientSec
     assert.strictEqual(capturedArgs.url.href, 'https://kc.example.com/realms/myrealm');
     assert.strictEqual(capturedArgs.clientId, 'mon-app');
     assert.strictEqual(capturedArgs.clientSecret, 'secret-123');
+});
+
+// --- Incrément 3 -----------------------//
+const {buildFakeFactories} = require("./Helper.test");
+
+test('createSso retourne les deux stratégies et le backchannel', async () => {
+    const f   = buildFakeFactories();
+    const sso = await createSso({ ...BASE_OPTIONS, _client: buildFakeClient(), _factories: f });
+
+    assert.strictEqual(sso.strategies.authorizationCode, f.fakeStrategy);
+    assert.strictEqual(sso.strategies.introspection,     f.fakeStrategy);
+    assert.strictEqual(sso.backchannel,                  f.fakeHandler);
 });
