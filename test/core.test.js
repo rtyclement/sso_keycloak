@@ -9,3 +9,11 @@ test('createSso échoue si issuerURL est absent', async () => {
         }),'/issuerUrl/' //regex d'erreur
     )
 })
+
+test('createSso échoue si clientId est absent', async () => {
+    await assert.rejects(
+        createSso({
+            issuerUrl:'http://blabla.com', clientSecret: 'b', sessionStore: {}, requireRole:'admin'
+        }),'/clientId/' //regex d'erreur
+    )
+})
