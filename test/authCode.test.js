@@ -44,3 +44,22 @@ test('startLogin retourne une décision de type redirect', async () => {
 
     assert.strictEqual(decision.type, 'redirect');
 });
+
+test('startLogin construit l\'url via buildAuthorizationUrl', async () => {
+    const fakeUrl    = new URL('https://kc.example.com/authorize');
+    const fakeClient = {
+        randomPKCECodeVerifier:     () => 'verifier-abc',
+        calculatePKCECodeChallenge: async () => 'challenge-xyz',
+        randomState:                () => 'state-123',
+        buildAuthorizationUrl:      () => fakeUrl,
+    };
+
+    const strategy = createAuthorizationCode({
+        client:      fakeClient,
+        config:      {},
+        redirectUri: '/callback',
+    });
+    const decision = await strategy.startLogin({ session: {} });
+
+    assert.strictEqual(decision.url, fakeUrl.href);
+});
