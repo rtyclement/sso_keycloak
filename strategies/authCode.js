@@ -20,8 +20,7 @@ function createAuthorizationCode(deps) {
                 code_challenge_method: 'S256',
                 state,
             });
-
-
+            ctx.session.pkce = {codeVerifier, state}
             return {type: 'redirect', url: url.href };
         },
     };
