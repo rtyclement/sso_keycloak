@@ -84,8 +84,11 @@ test('createAuthorizationCode retourne un objet avec une méthode handleCallback
 });
 
 test('handleCallback retourne une décision de type session', async () => {
-    const strategy = createAuthorizationCode({});
-    const decision = await strategy.handleCallback({ session: {} });
+     const strategy = createAuthorizationCode({
+        client:      buildFakeAuthClient(),
+    });
+    const session  = { pkce: { codeVerifier: '', state: '' } };
+    const decision = await strategy.handleCallback({session});
 
     assert.strictEqual(decision.type, 'session');
 });

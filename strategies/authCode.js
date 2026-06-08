@@ -1,3 +1,5 @@
+const jwt = require('jsonwebtoken')
+
 function createAuthorizationCode(deps) {
     return {
         authenticate: async (ctx) => {
@@ -23,7 +25,19 @@ function createAuthorizationCode(deps) {
             ctx.session.pkce = {codeVerifier, state}
             return {type: 'redirect', url: url.href };
         },
-        handleCallback: async() => ({ type: 'session' })
+        handleCallback: async (ctx) => {
+        const tokens  = await deps.client.authorizationCodeGrant(
+                deps.config,
+                ctx.url,
+                { pkceCodeVerifier: ctx.session.pkce.codeVerifier, expectedState: ctx.session.pkce.state },
+            );
+            const claims    = jwt.decode(tokens.access_token);
+            const roles     = claims?.resource_access?.[deps.clientId]?.roles ?? [];
+            const principal = { ...claims, roles };
+
+            ctx.session.user = principal;
+            return { type: 'session', principal, redirectTo: '/' };
+        },
     };
 }
 
