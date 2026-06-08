@@ -9,6 +9,7 @@ function guard(strategy) {
             return next();
         }
         if (decision.type === 'redirect') return res.redirect(decision.url);
+        if (decision.type === 'deny')     return res.status(decision.status).end();
     };
 }
 function loginRoute(strategy)               { }
