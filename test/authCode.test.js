@@ -9,8 +9,17 @@ test('createAuthorizationCode retourne un objet avec une méthode authenticate',
 
 test('authenticate redirige vers /login quand la session est vide', async () => {
     const strategy = createAuthorizationCode({});
-    const decision = await strategy.authenticate({ session: {} });
+    const decision = await strategy.authenticate({});
 
     assert.strictEqual(decision.type, 'redirect');
     assert.strictEqual(decision.url,  '/login');
+});
+
+test('authenticate retourne allow quand la session a un utilisateur avec le bon rôle', async () => {
+    const user     = { sub: 'user-123', roles: ['admin'] };
+    const strategy = createAuthorizationCode({ requiredRole: 'admin' });
+    const decision = await strategy.authenticate({ session: { user } });
+
+    assert.strictEqual(decision.type,      'allow');
+    assert.strictEqual(decision.principal, user);
 });
