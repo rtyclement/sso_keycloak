@@ -37,3 +37,10 @@ test('createAuthorizationCode retourne un objet avec une méthode startLogin', (
     const strategy = createAuthorizationCode({});
     assert.strictEqual(typeof strategy.startLogin, 'function');
 });
+
+test('startLogin retourne une décision de type redirect', async () => {
+    const strategy = createAuthorizationCode({});
+    const decision = await strategy.startLogin({ session: {} });
+
+    assert.strictEqual(decision.type, 'redirect');
+});
