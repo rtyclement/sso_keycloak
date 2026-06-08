@@ -32,3 +32,8 @@ test('authenticate retourne deny quand la session a un utilisateur avec le mauva
     assert.strictEqual(decision.type,      'deny');
     assert.strictEqual(decision.status, 403);
 });
+
+test('createAuthorizationCode retourne un objet avec une méthode startLogin', () => {
+    const strategy = createAuthorizationCode({});
+    assert.strictEqual(typeof strategy.startLogin, 'function');
+});
