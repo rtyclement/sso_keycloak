@@ -8,6 +8,7 @@ function guard(strategy) {
             req.principal = decision.principal;
             return next();
         }
+        if (decision.type === 'redirect') return res.redirect(decision.url);
     };
 }
 function loginRoute(strategy)               { }
