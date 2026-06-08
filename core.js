@@ -20,6 +20,7 @@ async function createSso(options = {}) {
 
     const factories = options._factories ?? {};
     const createAuthorizationCode = factories.authorizationCode ?? require('./strategies/authCode');
+    const createInstrospection = factories.introspection ?? require('./strategies/introspection');
 
     const strategies = {
         authorizationCode: createAuthorizationCode({
@@ -29,6 +30,14 @@ async function createSso(options = {}) {
             clientId:     options.clientId,
             requiredRole: options.requiredRole,
         }),
+        introspection: createInstrospection({
+            introspectUrl:    metadata.introspection_endpoint,
+            clientId:         options.introspection?.clientId     ?? options.clientId,
+            clientSecret:     options.introspection?.clientSecret ?? options.clientSecret,
+            audienceClientId: options.clientId,
+            requiredRole:     options.requiredRole,
+        }),
+
     };
     
     return {metadata,strategies};

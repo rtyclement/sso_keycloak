@@ -1,7 +1,9 @@
 const {test} = require("node:test");
 const assert = require('node:assert/strict');
 const {createSso} = require('../core');
-const STUB_FACTORIES = { authorizationCode: () => ({}) };
+const STUB_FACTORIES = { authorizationCode: () => ({}),
+                         introspection:     () => ({}), 
+};
 test('createSso échoue si issuerURL est absent', async () => {
     await assert.rejects(
         createSso({
@@ -70,8 +72,23 @@ test('createSso retourne une stratégie authorizationCode', async () => {
     const sso = await createSso({
         ...BASE_OPTIONS,
         _client:    buildFakeClient(),
-        _factories: { authorizationCode: () => fakeStrategy },
+        _factories: { authorizationCode: () => fakeStrategy,
+                      introspection:     () => ({}),
+        },
     });
 
     assert.strictEqual(sso.strategies.authorizationCode, fakeStrategy);
+});
+
+test('createSso retourne une stratégie introspection', async () => {
+    const fakeStrategy = { authenticate: async () => ({}) };
+
+    const sso = await createSso({
+        ...BASE_OPTIONS,
+        _client:    buildFakeClient(),
+        _factories: { authorizationCode:() => ({}),
+                      introspection: () => fakeStrategy },
+    });
+
+    assert.strictEqual(sso.strategies.introspection, fakeStrategy);
 });
