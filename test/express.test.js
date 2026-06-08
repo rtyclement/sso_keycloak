@@ -47,3 +47,15 @@ test('guard redirige quand la décision est redirect', async () => {
 
     assert.strictEqual(res._redirectUrl, '/login');
 });
+
+test('guard retourne le status HTTP quand la décision est deny', async () => {
+    const fakeStrategy = { authenticate: async () => ({ type: 'deny', status: 403 }) };
+
+    const req  = buildReq();
+    const res  = buildRes();
+
+    await guard(fakeStrategy)(req, res, () => {});
+
+    assert.strictEqual(res._status, 403);
+    assert.ok(res._ended);
+});
