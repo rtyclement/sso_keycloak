@@ -1,7 +1,7 @@
 const {test} = require("node:test");
 const assert = require('node:assert/strict');
 const {createSso} = require('../core');
-
+const STUB_FACTORIES = { authorizationCode: () => ({}) };
 test('createSso échoue si issuerURL est absent', async () => {
     await assert.rejects(
         createSso({
@@ -47,15 +47,15 @@ test('createSso échoue si requireRole est absent', async () => {
 const {FAKE_METADATA, BASE_OPTIONS, buildFakeClient, } = require("./Helper.test");
 
 test('createSso retourne les métadonnées issues de la discovery', async () => {
-    const sso = await createSso({ ...BASE_OPTIONS, _client: buildFakeClient() });
+    const sso = await createSso({ ...BASE_OPTIONS, _client: buildFakeClient(),_factories: STUB_FACTORIES });
     assert.deepStrictEqual(sso.metadata, FAKE_METADATA);
 });
 
 test('createSso appelle discovery avec l\'issuerUrl, le clientId et le clientSecret', async () => {
     let capturedArgs;
-    const fakeClient = buildFakeClient({ onDiscovery: (args) => { capturedArgs = args; } });
+    const fakeClient = buildFakeClient({ onDiscovery: (args) => { capturedArgs = args; }});
 
-    await createSso({ ...BASE_OPTIONS, _client: fakeClient });
+    await createSso({ ...BASE_OPTIONS, _client: fakeClient,_factories: STUB_FACTORIES });
 
     assert.strictEqual(capturedArgs.url.href, 'https://kc.example.com/realms/myrealm');
     assert.strictEqual(capturedArgs.clientId, 'mon-app');

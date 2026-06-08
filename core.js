@@ -22,10 +22,16 @@ async function createSso(options = {}) {
     const createAuthorizationCode = factories.authorizationCode ?? require('./strategies/authCode');
 
     const strategies = {
-        authorizationCode: createAuthorizationCode()
-    }
-    cre
-    return {metadata};
+        authorizationCode: createAuthorizationCode({
+            client,config,
+            redirectUri:  options.redirectUri,
+            sessionStore: options.sessionStore,
+            clientId:     options.clientId,
+            requiredRole: options.requiredRole,
+        }),
+    };
+    
+    return {metadata,strategies};
 };
 
 module.exports = {createSso};
