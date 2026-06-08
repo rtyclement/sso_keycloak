@@ -59,3 +59,14 @@ test('guard retourne le status HTTP quand la décision est deny', async () => {
     assert.strictEqual(res._status, 403);
     assert.ok(res._ended);
 });
+
+test('loginRoute redirige vers l\'url retournée par startLogin', async () => {
+    const fakeStrategy = { startLogin: async () => ({ type: 'redirect', url: 'https://kc.example.com/authorize' }) };
+
+    const req = buildReq();
+    const res = buildRes();
+
+    await loginRoute(fakeStrategy)(req, res);
+
+    assert.strictEqual(res._redirectUrl, 'https://kc.example.com/authorize');
+});
