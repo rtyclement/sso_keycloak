@@ -9,7 +9,7 @@ function createAuthorizationCode(deps) {
             }
             return { type: 'allow', principal: ctx.session.user };
         },
-        startLogin: async () => {},
+        startLogin: async () => ({ type: 'redirect', url: '' }),
     };
 }
 
