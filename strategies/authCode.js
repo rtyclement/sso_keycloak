@@ -9,7 +9,21 @@ function createAuthorizationCode(deps) {
             }
             return { type: 'allow', principal: ctx.session.user };
         },
-        startLogin: async () => ({ type: 'redirect', url: '' }),
+        startLogin: async (ctx) => { 
+            const codeVerifier  = deps.client.randomPKCECodeVerifier();
+            const codeChallenge = await deps.client.calculatePKCECodeChallenge(codeVerifier);
+            const state         = deps.client.randomState();
+            const url           = deps.client.buildAuthorizationUrl(deps.config, {
+                redirect_uri:          deps.redirectUri,
+                scope:                 'openid profile',
+                code_challenge:        codeChallenge,
+                code_challenge_method: 'S256',
+                state,
+            });
+
+
+            return {type: 'redirect', url: url.href };
+        },
     };
 }
 
