@@ -4,7 +4,7 @@ function createAuthorizationCode(deps) {
             if (!ctx.session?.user) {
                 return { type: 'redirect', url: '/login' };
             }
-            return {};
+            return { type: 'allow', principal: ctx.session.user };
         },
     };
 }
