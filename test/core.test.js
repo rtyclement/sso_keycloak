@@ -2,7 +2,8 @@ const {test} = require("node:test");
 const assert = require('node:assert/strict');
 const {createSso} = require('../core');
 const STUB_FACTORIES = { authorizationCode: () => ({}),
-                         introspection:     () => ({}), 
+                         introspection:     () => ({}),
+                         backchannel:       () => ({}) 
 };
 test('createSso échoue si issuerURL est absent', async () => {
     await assert.rejects(
@@ -74,6 +75,7 @@ test('createSso retourne une stratégie authorizationCode', async () => {
         _client:    buildFakeClient(),
         _factories: { authorizationCode: () => fakeStrategy,
                       introspection:     () => ({}),
+                      backchannel: () => ({})
         },
     });
 
@@ -87,8 +89,23 @@ test('createSso retourne une stratégie introspection', async () => {
         ...BASE_OPTIONS,
         _client:    buildFakeClient(),
         _factories: { authorizationCode:() => ({}),
-                      introspection: () => fakeStrategy },
+                      introspection: () => fakeStrategy,
+                      backchannel: () => ({})},
     });
 
     assert.strictEqual(sso.strategies.introspection, fakeStrategy);
+});
+
+test('createSso retourne un handler backchannel', async () => {
+    const fakeHandler = async () => {};
+
+    const sso = await createSso({
+        ...BASE_OPTIONS,
+        _client:    buildFakeClient(),
+        _factories: { authorizationCode:() => ({}),
+                      introspection: () => ({}),
+                      backchannel: () => fakeHandler},
+    });
+
+    assert.strictEqual(sso.backchannel, fakeHandler);
 });
