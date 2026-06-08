@@ -17,3 +17,27 @@ test('createSso échoue si clientId est absent', async () => {
         }),'/clientId/' //regex d'erreur
     )
 })
+
+test('createSso échoue si clientSecret est absent', async () => {
+    await assert.rejects(
+        createSso({
+            issuerUrl:'http://blabla.com', clientId: 'b', sessionStore: {}, requireRole:'admin'
+        }),'/clientSecret/' //regex d'erreur
+    )
+})
+
+test('createSso échoue si sessionStore est absent', async () => {
+    await assert.rejects(
+        createSso({
+            issuerUrl:'http://blabla.com', clientId: 'b', clientSecret: 'a', requireRole:'admin'
+        }),'/sessionStore/' //regex d'erreur
+    )
+})
+
+test('createSso échoue si requireRole est absent', async () => {
+    await assert.rejects(
+        createSso({
+            issuerUrl:'http://blabla.com', clientId: 'b', clientSecret: 'a', sessionStore:{}
+        }),'/requireRole/' //regex d'erreur
+    )
+})
