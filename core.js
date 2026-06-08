@@ -21,6 +21,7 @@ async function createSso(options = {}) {
     const factories = options._factories ?? {};
     const createAuthorizationCode = factories.authorizationCode ?? require('./strategies/authCode');
     const createInstrospection = factories.introspection ?? require('./strategies/introspection');
+    const createBackchannel = factories.backchannel ?? require('./backchannel');
 
     const strategies = {
         authorizationCode: createAuthorizationCode({
@@ -38,8 +39,13 @@ async function createSso(options = {}) {
             requiredRole:     options.requiredRole,
         }),
     };
-    
-    return {metadata,strategies};
+
+    const backchannel = createBackchannel({
+        sessionStore: options.sessionStore,
+        jwksUri: metadata.jwks_uri,
+    });
+
+    return {metadata,strategies,backchannel};
 };
 
 module.exports = {createSso};
