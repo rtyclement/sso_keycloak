@@ -37,7 +37,6 @@ async function createSso(options = {}) {
             audienceClientId: options.clientId,
             requiredRole:     options.requiredRole,
         }),
-
     };
     
     return {metadata,strategies};
