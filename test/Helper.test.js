@@ -32,4 +32,14 @@ function buildFakeFactories() {
     };
 }
 
-module.exports = {FAKE_METADATA, BASE_OPTIONS, buildFakeClient,buildFakeFactories};
+function buildFakeAuthClient(overrides = {}) {
+    return {
+        randomPKCECodeVerifier:     () => 'verifier-abc',
+        calculatePKCECodeChallenge: async () => 'challenge-xyz',
+        randomState:                () => 'state-123',
+        buildAuthorizationUrl:      () => new URL('https://kc.example.com/authorize'),
+        ...overrides,
+    };
+}
+
+module.exports = {FAKE_METADATA, BASE_OPTIONS, buildFakeClient,buildFakeFactories,buildFakeAuthClient};
