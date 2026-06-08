@@ -36,3 +36,14 @@ test('guard appelle next() et attache le principal quand la décision est allow'
     assert.ok(nextCalled);
     assert.strictEqual(req.principal, principal);
 });
+
+test('guard redirige quand la décision est redirect', async () => {
+    const fakeStrategy = { authenticate: async () => ({ type: 'redirect', url: '/login' }) };
+
+    const req  = buildReq();
+    const res  = buildRes();
+
+    await guard(fakeStrategy)(req, res, () => {});
+
+    assert.strictEqual(res._redirectUrl, '/login');
+});
