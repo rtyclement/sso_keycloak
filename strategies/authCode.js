@@ -23,9 +23,7 @@ function createAuthorizationCode(deps) {
             ctx.session.pkce = {codeVerifier, state}
             return {type: 'redirect', url: url.href };
         },
-        handleCallback: async() => {
-            
-        }
+        handleCallback: async() => ({ type: 'session' })
     };
 }
 

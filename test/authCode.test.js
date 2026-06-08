@@ -82,3 +82,10 @@ test('createAuthorizationCode retourne un objet avec une méthode handleCallback
     const strategy = createAuthorizationCode({});
     assert.strictEqual(typeof strategy.handleCallback, 'function');
 });
+
+test('handleCallback retourne une décision de type session', async () => {
+    const strategy = createAuthorizationCode({});
+    const decision = await strategy.handleCallback({ session: {} });
+
+    assert.strictEqual(decision.type, 'session');
+});
