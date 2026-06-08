@@ -1,0 +1,22 @@
+{
+  "name": "sso_keycloak",
+  "version": "1.0.0",
+  "description": "Adaptateur Keycloak Server-Side",
+  "keywords": [
+    "Keycloak",
+    "OpenID",
+    "OAuth2"
+  ],
+  "license": "ISC",
+  "author": "Clément Roty",
+  "type": "commonjs",
+  "main": "core.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node core.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "openid-client": "^6.8.4"
+  }
+}
