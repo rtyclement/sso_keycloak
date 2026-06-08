@@ -23,3 +23,12 @@ test('authenticate retourne allow quand la session a un utilisateur avec le bon 
     assert.strictEqual(decision.type,      'allow');
     assert.strictEqual(decision.principal, user);
 });
+
+test('authenticate retourne deny quand la session a un utilisateur avec le mauvais rôle', async () => {
+    const user     = { sub: 'user-123', roles: ['user'] };
+    const strategy = createAuthorizationCode({ requiredRole: 'admin' });
+    const decision = await strategy.authenticate({ session: { user } });
+
+    assert.strictEqual(decision.type,      'deny');
+    assert.strictEqual(decision.status, 403);
+});
