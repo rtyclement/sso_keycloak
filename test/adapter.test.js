@@ -80,3 +80,20 @@ test('callbackRoute redirige vers redirectTo après le callback', async () => {
 
     assert.strictEqual(log.redirect, '/');
 });
+
+test('callbackRoute appelle trackSession avec le sid et le sessionId', async () => {
+    const fakeStrategy = { handleCallback: async () => ({ type: 'session', redirectTo: '/' }) };
+    let capturedArgs   = null;
+    const fakeBackchannel = { trackSession: (sid, sessionId) => { capturedArgs = { sid, sessionId }; } };
+    const { driver }   = buildFakeDriver();
+    const adapter      = new Adapter(driver);
+
+    const req = buildReq({
+        session:   { user: { sid: 'kc-sid-abc' } },
+        sessionId: 'express-sess-xyz',
+    });
+    await adapter.callbackRoute(fakeStrategy, fakeBackchannel)(req, {});
+
+    assert.strictEqual(capturedArgs.sid,       'kc-sid-abc');
+    assert.strictEqual(capturedArgs.sessionId, 'express-sess-xyz');
+});
