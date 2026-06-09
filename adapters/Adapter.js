@@ -11,10 +11,8 @@ class Adapter {
                 session: this._driver.getSession(req),
                 headers: this._driver.getHeaders(req),
             });
-            if (decision.type === 'allow') {
-                this._driver.setPrincipal(req, decision.principal);
-                return this._driver.continue(next);
-            }
+            if (decision.type === 'allow')    { this._driver.setPrincipal(req, decision.principal); return this._driver.continue(next); }
+            if (decision.type === 'redirect') return this._driver.redirect(reply, decision.url);
         };
     }
     loginRoute(strategy)               { }
