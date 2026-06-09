@@ -48,3 +48,13 @@ test('guard redirige sur redirect', async () => {
 
     assert.strictEqual(log.redirect, '/login');
 });
+
+test('guard appelle deny avec le bon status sur deny', async () => {
+    const fakeStrategy    = { authenticate: async () => ({ type: 'deny', status: 403 }) };
+    const { driver, log } = buildFakeDriver();
+    const adapter         = new Adapter(driver);
+
+    await adapter.guard(fakeStrategy)(buildReq(), {}, () => {});
+
+    assert.strictEqual(log.status, 403);
+});
