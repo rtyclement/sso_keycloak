@@ -76,4 +76,17 @@ function buildReq(overrides = {}) {
     };
 }
 
-module.exports = {FAKE_METADATA, BASE_OPTIONS, buildFakeClient,buildFakeFactories,buildFakeAuthClient,makeJwt,buildFakeDriver,buildReq};
+
+function buildFakeClient2() {
+    return {
+        discovery: async () => ({
+            serverMetadata: () => ({
+                introspection_endpoint: 'http://kc/introspect',
+                jwks_uri:               'http://kc/certs',
+            }),
+        }),
+    };
+}
+
+
+module.exports = {FAKE_METADATA, BASE_OPTIONS, buildFakeClient,buildFakeFactories,buildFakeAuthClient,makeJwt,buildFakeDriver,buildReq,buildFakeClient2};

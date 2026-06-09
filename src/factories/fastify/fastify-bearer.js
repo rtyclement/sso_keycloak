@@ -3,17 +3,17 @@ const { createSso } = require('../core');
 
 function required(value, name) {
     if (value === undefined || value === null)
-        throw new Error(`[sso_keycloak/express-bearer] ${name} est obligatoire`);
+        throw new Error(`[sso_keycloak/fastify-bearer] ${name} est obligatoire`);
     return value;
 }
 
-module.exports = function createExpressBearerSso(deps = {}, config = {}) {
+module.exports = function createFastifyBearerSso(deps = {}, config = {}) {
     required(config.issuerUrl,    'config.issuerUrl');
     required(config.clientId,     'config.clientId');
     required(config.clientSecret, 'config.clientSecret');
     required(config.requiredRole, 'config.requiredRole');
 
-    const adapter = new Adapter(Adapter.DRIVERS.EXPRESS);
+    const adapter = new Adapter(Adapter.DRIVERS.FASTIFY);
     let guard     = null;
 
     const ready = createSso({ ...config, fetch: deps.fetch })
@@ -21,9 +21,12 @@ module.exports = function createExpressBearerSso(deps = {}, config = {}) {
             guard = adapter.guard(sso.strategies.introspection);
         })
         .catch(err => {
-            console.error('[sso_keycloak/express-bearer] Init échouée :', err);
+            console.error('[sso_keycloak/fastify-bearer] Init échouée :', err);
             process.exit(1);
         });
 
-    return (req, res, next) => ready.then(() => guard(req, res, next)).catch(next);
+    return async function fastifyBearerPlugin(fastify) {
+        await ready;
+        fastify.addHook('onRequest', guard);
+    };
 };

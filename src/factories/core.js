@@ -10,7 +10,6 @@ async function createSso(options = {}) {
     required(options, 'issuerUrl');
     required(options, 'clientId');
     required(options, 'clientSecret');
-    required(options, 'sessionStore');
     required(options, 'requiredRole');
     const client = options._client ?? realClient;
 
