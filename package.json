@@ -1,21 +1,21 @@
 {
   "name": "sso_keycloak",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Adaptateur Keycloak Server-Side",
   "keywords": [
     "Keycloak",
     "OpenID",
-    "OAuth2"
+    "OAuth2",
+    "Back-Channel"
   ],
   "license": "ISC",
   "author": "Clément Roty",
   "type": "commonjs",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "node --test"
   },
   "dependencies": {
-    "dotenv": "^17.4.2",
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.0.1",
     "openid-client": "^6.8.4"
