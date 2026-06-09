@@ -24,7 +24,21 @@ class Adapter {
             if (decision.type === 'redirect') return this._driver.redirect(reply, decision.url);
         };
     }
-    callbackRoute(strategy, backchannel){ }
+    callbackRoute(strategy, backchannel) {
+        return async (req, reply) => {
+            const decision = await strategy.handleCallback({
+                session: this._driver.getSession(req),
+                url:     this._driver.getUrl(req),
+            });
+            if (decision.type === 'session') {
+                backchannel.trackSession(
+                    this._driver.getSession(req).user?.sid,
+                    this._driver.getSessionId(req),
+                );
+                return this._driver.redirect(reply, decision.redirectTo);
+            }
+        };
+    }
     backchannelRoute(backchannel)      { }
 }
 Adapter.DRIVERS = DRIVERS;
