@@ -23,3 +23,18 @@ test('Adapter.DRIVERS expose EXPRESS et FASTIFY avec les bonnes clés', () => {
         assert.strictEqual(typeof Adapter.DRIVERS.FASTIFY[key], 'function', `FASTIFY manque : ${key}`);
     }
 });
+
+test('guard appelle continue et attache le principal sur allow', async () => {
+    const principal    = { sub: 'user-123', roles: ['admin'] };
+    const fakeStrategy = { authenticate: async () => ({ type: 'allow', principal }) };
+    const { driver, log } = buildFakeDriver();
+    const adapter      = new Adapter(driver);
+
+    const req  = buildReq();
+    let nextCalled = false;
+
+    await adapter.guard(fakeStrategy)(req, {}, () => { nextCalled = true; });
+
+    assert.ok(nextCalled);
+    assert.strictEqual(log.principal, principal);
+});
