@@ -108,3 +108,13 @@ test('backchannelRoute répond avec le status retourné par handle', async () =>
 
     assert.strictEqual(log.status, 200);
 });
+
+test('backchannelRoute appelle deny quand handle retourne 400', async () => {
+    const fakeBackchannel = { handle: async () => ({ status: 400 }) };
+    const { driver, log } = buildFakeDriver();
+    const adapter         = new Adapter(driver);
+
+    await adapter.backchannelRoute(fakeBackchannel)(buildReq(), {});
+
+    assert.strictEqual(log.status, 400);
+});

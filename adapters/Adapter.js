@@ -44,7 +44,8 @@ class Adapter {
             const decision = await backchannel.handle({
                 body: this._driver.getBody(req),
             });
-            this._driver.ok(reply);
+            if (decision.status === 200) return this._driver.ok(reply);
+            return this._driver.deny(reply, decision.status);
         };
     }
 }
