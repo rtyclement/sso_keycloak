@@ -10,10 +10,9 @@
   "license": "ISC",
   "author": "Clément Roty",
   "type": "commonjs",
-  "main": "core.js",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node core.js"
+    "test": "node --test"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
