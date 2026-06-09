@@ -116,3 +116,13 @@ test('handle retourne 200 quand aucune session correspondante n\'est trouvée', 
 
     assert.strictEqual(decision.status, 200);
 });
+
+test('backchannelRoute appelle deny quand handle retourne 400', async () => {
+    const fakeBackchannel = { handle: async () => ({ status: 400 }) };
+    const { driver, log } = buildFakeDriver();
+    const adapter         = new Adapter(driver);
+
+    await adapter.backchannelRoute(fakeBackchannel)(buildReq(), {});
+
+    assert.strictEqual(log.status, 400);
+});
