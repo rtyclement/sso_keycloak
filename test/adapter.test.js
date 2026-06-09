@@ -58,3 +58,13 @@ test('guard appelle deny avec le bon status sur deny', async () => {
 
     assert.strictEqual(log.status, 403);
 });
+
+test('loginRoute redirige vers l\'url retournée par startLogin', async () => {
+    const fakeStrategy    = { startLogin: async () => ({ type: 'redirect', url: 'https://kc.example.com/authorize' }) };
+    const { driver, log } = buildFakeDriver();
+    const adapter         = new Adapter(driver);
+
+    await adapter.loginRoute(fakeStrategy)(buildReq(), {});
+
+    assert.strictEqual(log.redirect, 'https://kc.example.com/authorize');
+});
