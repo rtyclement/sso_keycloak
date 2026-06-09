@@ -16,7 +16,14 @@ class Adapter {
             if (decision.type === 'deny')     return this._driver.deny(reply, decision.status);
         };
     }
-    loginRoute(strategy)               { }
+    loginRoute(strategy) {
+        return async (req, reply) => {
+            const decision = await strategy.startLogin({
+                session: this._driver.getSession(req),
+            });
+            if (decision.type === 'redirect') return this._driver.redirect(reply, decision.url);
+        };
+    }
     callbackRoute(strategy, backchannel){ }
     backchannelRoute(backchannel)      { }
 }
