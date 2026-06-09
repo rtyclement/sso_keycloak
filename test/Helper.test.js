@@ -49,4 +49,31 @@ function makeJwt(payload) {
     return `${header}.${body}.fakesig`;
 }
 
-module.exports = {FAKE_METADATA, BASE_OPTIONS, buildFakeClient,buildFakeFactories,buildFakeAuthClient,makeJwt};
+function buildFakeDriver() {
+    const log = { principal: null, redirect: null, status: null, continued: false };
+    return {
+        driver: {
+            getSession:   (req)       => req.session,
+            getHeaders:   (req)       => req.headers,
+            getBody:      (req)       => req.body,
+            getUrl:       (req)       => req.url,
+            getSessionId: (req)       => req.sessionId,
+            setPrincipal: (req, p)    => { req.principal = p; log.principal = p; },
+            redirect:     (_, url)    => { log.redirect = url; },
+            deny:         (_, status) => { log.status = status; },
+            ok:           ()          => { log.status = 200; },
+            continue:     (next)      => { log.continued = true; if (next) next(); },
+        },
+        log,
+    };
+}
+
+function buildReq(overrides = {}) {
+    return {
+        headers: {}, session: {}, sessionId: 'sess-123',
+        body: {}, url: new URL('https://app.example.com/callback'),
+        ...overrides,
+    };
+}
+
+module.exports = {FAKE_METADATA, BASE_OPTIONS, buildFakeClient,buildFakeFactories,buildFakeAuthClient,makeJwt,buildFakeDriver,buildReq};
