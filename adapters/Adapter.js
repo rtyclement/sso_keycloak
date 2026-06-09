@@ -1,3 +1,5 @@
+const DRIVERS = require("./Drivers");
+
 class Adapter {
     constructor(driver) {
         this._driver = driver;
@@ -8,5 +10,5 @@ class Adapter {
     callbackRoute(strategy, backchannel){ }
     backchannelRoute(backchannel)      { }
 }
-
+Adapter.DRIVERS = DRIVERS;
 module.exports = Adapter;
