@@ -10,6 +10,7 @@ const DRIVERS = Object.freeze({
         deny:         (res, s)   => res.status(s).end(),
         ok:           (res)      => res.status(200).end(),
         continue:     (next)     => next(),
+        onError: (next, err) => next(err)
     }),
     FASTIFY: Object.freeze({
         getSession:   (req)        => req.session,
@@ -22,6 +23,7 @@ const DRIVERS = Object.freeze({
         deny:         (reply, s)   => reply.code(s).send(),
         ok:           (reply)      => reply.code(200).send(),
         continue:     ()           => {},
+        onError: (next, err) => next(err)
     }),
 });
 

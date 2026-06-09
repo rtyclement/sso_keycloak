@@ -12,11 +12,20 @@ async function createSso(options = {}) {
     required(options, 'clientSecret');
     required(options, 'sessionStore');
     required(options, 'requiredRole');
-    
     const client = options._client ?? realClient;
 
-    const config = await client.discovery(new URL(options.issuerUrl), options.clientId, options.clientSecret);
-    const metadata= config.serverMetadata();
+    const discoveryOptions = options.allowHttp
+    ? { execute: [client.allowInsecureRequests] }
+    : {};
+
+    const config   = await client.discovery(
+        new URL(options.issuerUrl),
+        options.clientId,
+        options.clientSecret,
+        undefined,
+        discoveryOptions,
+    );
+    const metadata = config.serverMetadata();
 
     const factories = options._factories ?? {};
     const createAuthorizationCode = factories.authorizationCode ?? require('./strategies/authCode');
