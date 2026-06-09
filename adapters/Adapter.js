@@ -13,6 +13,7 @@ class Adapter {
             });
             if (decision.type === 'allow')    { this._driver.setPrincipal(req, decision.principal); return this._driver.continue(next); }
             if (decision.type === 'redirect') return this._driver.redirect(reply, decision.url);
+            if (decision.type === 'deny')     return this._driver.deny(reply, decision.status);
         };
     }
     loginRoute(strategy)               { }
