@@ -39,7 +39,14 @@ class Adapter {
             }
         };
     }
-    backchannelRoute(backchannel)      { }
+    backchannelRoute(backchannel) {
+        return async (req, reply) => {
+            const decision = await backchannel.handle({
+                body: this._driver.getBody(req),
+            });
+            this._driver.ok(reply);
+        };
+    }
 }
 Adapter.DRIVERS = DRIVERS;
 module.exports = Adapter;
