@@ -97,3 +97,14 @@ test('callbackRoute appelle trackSession avec le sid et le sessionId', async () 
     assert.strictEqual(capturedArgs.sid,       'kc-sid-abc');
     assert.strictEqual(capturedArgs.sessionId, 'express-sess-xyz');
 });
+
+test('backchannelRoute répond avec le status retourné par handle', async () => {
+    const fakeBackchannel = { handle: async () => ({ status: 200 }) };
+    const { driver, log } = buildFakeDriver();
+    const adapter         = new Adapter(driver);
+
+    const req = buildReq({ body: { logout_token: 'token' } });
+    await adapter.backchannelRoute(fakeBackchannel)(req, {});
+
+    assert.strictEqual(log.status, 200);
+});
