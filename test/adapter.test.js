@@ -38,3 +38,13 @@ test('guard appelle continue et attache le principal sur allow', async () => {
     assert.ok(nextCalled);
     assert.strictEqual(log.principal, principal);
 });
+
+test('guard redirige sur redirect', async () => {
+    const fakeStrategy    = { authenticate: async () => ({ type: 'redirect', url: '/login' }) };
+    const { driver, log } = buildFakeDriver();
+    const adapter         = new Adapter(driver);
+
+    await adapter.guard(fakeStrategy)(buildReq(), {}, () => {});
+
+    assert.strictEqual(log.redirect, '/login');
+});
