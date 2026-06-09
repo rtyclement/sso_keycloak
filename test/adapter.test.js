@@ -13,3 +13,13 @@ test('Adapter expose guard, loginRoute, callbackRoute et backchannelRoute', () =
     assert.strictEqual(typeof adapter.callbackRoute,    'function');
     assert.strictEqual(typeof adapter.backchannelRoute, 'function');
 });
+
+test('Adapter.DRIVERS expose EXPRESS et FASTIFY avec les bonnes clés', () => {
+    const keys = ['getSession', 'getHeaders', 'getBody', 'getUrl',
+                  'getSessionId', 'setPrincipal', 'redirect', 'deny', 'ok', 'continue'];
+
+    for (const key of keys) {
+        assert.strictEqual(typeof Adapter.DRIVERS.EXPRESS[key], 'function', `EXPRESS manque : ${key}`);
+        assert.strictEqual(typeof Adapter.DRIVERS.FASTIFY[key], 'function', `FASTIFY manque : ${key}`);
+    }
+});
