@@ -68,3 +68,15 @@ test('loginRoute redirige vers l\'url retournée par startLogin', async () => {
 
     assert.strictEqual(log.redirect, 'https://kc.example.com/authorize');
 });
+
+test('callbackRoute redirige vers redirectTo après le callback', async () => {
+    const fakeStrategy    = { handleCallback: async () => ({ type: 'session', redirectTo: '/' }) };
+    const fakeBackchannel = { trackSession: () => {} };
+    const { driver, log } = buildFakeDriver();
+    const adapter         = new Adapter(driver);
+
+    const req = buildReq({ session: { user: { sid: 'kc-sid' } } });
+    await adapter.callbackRoute(fakeStrategy, fakeBackchannel)(req, {});
+
+    assert.strictEqual(log.redirect, '/');
+});
