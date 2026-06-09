@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
-const createBackchannel = require('../backchannel');
+const createBackchannel = require('../../src/handlers/backchannel');
 
 // Fake verify : simule un token valide avec le payload fourni
 function buildFakeVerify(decoded) {

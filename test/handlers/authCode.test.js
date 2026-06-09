@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
-const createAuthorizationCode = require('../strategies/authCode');
+const createAuthorizationCode = require('../../src/handlers/authCode');
 
 test('createAuthorizationCode retourne un objet avec une méthode authenticate', () => {
     const strategy = createAuthorizationCode({});
@@ -38,7 +38,7 @@ test('createAuthorizationCode retourne un objet avec une méthode startLogin', (
     assert.strictEqual(typeof strategy.startLogin, 'function');
 });
 
-const {buildFakeAuthClient} = require("./Helper.test")
+const {buildFakeAuthClient} = require("../Helper.test")
 
 test('startLogin retourne une décision de type redirect', async () => {
     const strategy = createAuthorizationCode({
@@ -93,7 +93,7 @@ test('handleCallback retourne une décision de type session', async () => {
     assert.strictEqual(decision.type, 'session');
 });
 
-const {makeJwt} = require('./Helper.test')
+const {makeJwt} = require('../Helper.test')
 
 test('handleCallback stocke le principal dans la session pour l echange de code & doit la nettoyer ensuite', async () => {
     const accessToken = makeJwt({

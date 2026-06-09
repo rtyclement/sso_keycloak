@@ -28,9 +28,9 @@ async function createSso(options = {}) {
     const metadata = config.serverMetadata();
 
     const factories = options._factories ?? {};
-    const createAuthorizationCode = factories.authorizationCode ?? require('./strategies/authCode');
-    const createInstrospection = factories.introspection ?? require('./strategies/introspection');
-    const createBackchannel = factories.backchannel ?? require('./backchannel');
+    const createAuthorizationCode = factories.authorizationCode ?? require('../handlers/authCode');
+    const createInstrospection = factories.introspection ?? require('../handlers/introspection');
+    const createBackchannel = factories.backchannel ?? require('../handlers/backchannel');
 
     const strategies = {
         authorizationCode: createAuthorizationCode({

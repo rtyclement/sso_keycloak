@@ -1,6 +1,6 @@
 const {test} = require("node:test");
 const assert = require('node:assert/strict');
-const {createSso} = require('../core');
+const {createSso} = require('../../src/factories/core');
 const STUB_FACTORIES = { authorizationCode: () => ({}),
                          introspection:     () => ({}),
                          backchannel:       () => ({}) 
@@ -47,7 +47,7 @@ test('createSso échoue si requireRole est absent', async () => {
 
 // --- Incrément 2 -----------------------//
 
-const {FAKE_METADATA, BASE_OPTIONS, buildFakeClient, } = require("./Helper.test");
+const {FAKE_METADATA, BASE_OPTIONS, buildFakeClient, } = require("../Helper.test");
 
 test('createSso retourne les métadonnées issues de la discovery', async () => {
     const sso = await createSso({ ...BASE_OPTIONS, _client: buildFakeClient(),_factories: STUB_FACTORIES });
@@ -110,7 +110,7 @@ test('createSso retourne un handler backchannel', async () => {
     assert.strictEqual(sso.backchannel, fakeHandler);
 });
 
-const {buildFakeFactories} = require("./Helper.test");
+const {buildFakeFactories} = require("../Helper.test");
 
 test('la factory authorizationCode reçoit clientId, redirectUri, sessionStore et requiredRole', async () => {
     const f            = buildFakeFactories();

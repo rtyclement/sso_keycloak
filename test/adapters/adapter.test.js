@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
-const Adapter  = require('../adapters/Adapter');
-const {buildFakeDriver, buildReq} = require('./Helper.test');
+const Adapter  = require('../../src/adapters/Adapter');
+const {buildFakeDriver, buildReq} = require('../Helper.test');
 
 
 test('Adapter expose guard, loginRoute, callbackRoute et backchannelRoute', () => {
