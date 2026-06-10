@@ -1,11 +1,11 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
 const Adapter  = require('../../src/adapters/Adapter');
-const {buildFakeDriver, buildReq} = require('../Helper.test');
+const {makeFakeDriver, buildReq} = require('../Helper.test');
 
 
 test('Adapter expose guard, loginRoute, callbackRoute et backchannelRoute', () => {
-    const { driver } = buildFakeDriver();
+    const { driver } = makeFakeDriver();
     const adapter    = new Adapter(driver);
 
     assert.strictEqual(typeof adapter.guard,            'function');
@@ -15,53 +15,54 @@ test('Adapter expose guard, loginRoute, callbackRoute et backchannelRoute', () =
 });
 
 test('Adapter.DRIVERS expose EXPRESS et FASTIFY avec les bonnes clés', () => {
-    const keys = ['getSession', 'getHeaders', 'getBody', 'getUrl',
-                  'getSessionId', 'setPrincipal', 'redirect', 'deny', 'ok', 'continue'];
-
-    for (const key of keys) {
-        assert.strictEqual(typeof Adapter.DRIVERS.EXPRESS[key], 'function', `EXPRESS manque : ${key}`);
-        assert.strictEqual(typeof Adapter.DRIVERS.FASTIFY[key], 'function', `FASTIFY manque : ${key}`);
+    const EXPECTED = [
+        'getSession', 'getHeaders', 'getBody', 'getUrl', 'getSessionId',
+        'setPrincipal', 'redirect', 'deny', 'ok', 'wrap',
+    ];
+    for (const driver of ['EXPRESS', 'FASTIFY']) {
+        for (const key of EXPECTED) {
+            assert.equal(typeof Adapter.DRIVERS[driver][key], 'function', `${driver} manque : ${key}`);
+        }
     }
 });
 
 test('guard appelle continue et attache le principal sur allow', async () => {
-    const principal    = { sub: 'user-123', roles: ['admin'] };
-    const fakeStrategy = { authenticate: async () => ({ type: 'allow', principal }) };
-    const { driver, log } = buildFakeDriver();
-    const adapter      = new Adapter(driver);
+    const { driver, calls } = makeFakeDriver();
+    const adapter = new Adapter(driver);
 
-    const req  = buildReq();
-    let nextCalled = false;
+    const strategy = { authenticate: async () => ({ type: 'allow', principal: { id: 42 } }) };
+    const handler  = adapter.guard(strategy);
 
-    await adapter.guard(fakeStrategy)(req, {}, () => { nextCalled = true; });
+    await handler({ session: {}, headers: {} }, {});
 
-    assert.ok(nextCalled);
-    assert.strictEqual(log.principal, principal);
+    assert.deepEqual(calls.principal, { id: 42 });
+    assert.equal(calls.continued, true);
 });
 
 test('guard redirige sur redirect', async () => {
-    const fakeStrategy    = { authenticate: async () => ({ type: 'redirect', url: '/login' }) };
-    const { driver, log } = buildFakeDriver();
-    const adapter         = new Adapter(driver);
+    const { driver, calls } = makeFakeDriver();
+    const adapter  = new Adapter(driver);
+    const strategy = { authenticate: async () => ({ type: 'redirect', url: '/login' }) };
 
-    await adapter.guard(fakeStrategy)(buildReq(), {}, () => {});
+    await adapter.guard(strategy)({ session: {}, headers: {} }, {});
 
-    assert.strictEqual(log.redirect, '/login');
+    assert.equal(calls.redirect, '/login');
+    assert.equal(calls.continued, false);
 });
 
 test('guard appelle deny avec le bon status sur deny', async () => {
-    const fakeStrategy    = { authenticate: async () => ({ type: 'deny', status: 403 }) };
-    const { driver, log } = buildFakeDriver();
-    const adapter         = new Adapter(driver);
+    const { driver, calls } = makeFakeDriver();
+    const adapter  = new Adapter(driver);
+    const strategy = { authenticate: async () => ({ type: 'deny', status: 403 }) };
 
-    await adapter.guard(fakeStrategy)(buildReq(), {}, () => {});
+    await adapter.guard(strategy)({ session: {}, headers: {} }, {});
 
-    assert.strictEqual(log.status, 403);
+    assert.equal(calls.deny, 403);
 });
 
 test('loginRoute redirige vers l\'url retournée par startLogin', async () => {
     const fakeStrategy    = { startLogin: async () => ({ type: 'redirect', url: 'https://kc.example.com/authorize' }) };
-    const { driver, log } = buildFakeDriver();
+    const { driver, log } = makeFakeDriver();
     const adapter         = new Adapter(driver);
 
     await adapter.loginRoute(fakeStrategy)(buildReq(), {});
@@ -72,7 +73,7 @@ test('loginRoute redirige vers l\'url retournée par startLogin', async () => {
 test('callbackRoute redirige vers redirectTo après le callback', async () => {
     const fakeStrategy    = { handleCallback: async () => ({ type: 'session', redirectTo: '/' }) };
     const fakeBackchannel = { trackSession: () => {} };
-    const { driver, log } = buildFakeDriver();
+    const { driver, log } = makeFakeDriver();
     const adapter         = new Adapter(driver);
 
     const req = buildReq({ session: { user: { sid: 'kc-sid' } } });
@@ -85,7 +86,7 @@ test('callbackRoute appelle trackSession avec le sid et le sessionId', async () 
     const fakeStrategy = { handleCallback: async () => ({ type: 'session', redirectTo: '/' }) };
     let capturedArgs   = null;
     const fakeBackchannel = { trackSession: (sid, sessionId) => { capturedArgs = { sid, sessionId }; } };
-    const { driver }   = buildFakeDriver();
+    const { driver }   = makeFakeDriver();
     const adapter      = new Adapter(driver);
 
     const req = buildReq({
@@ -100,7 +101,7 @@ test('callbackRoute appelle trackSession avec le sid et le sessionId', async () 
 
 test('backchannelRoute répond avec le status retourné par handle', async () => {
     const fakeBackchannel = { handle: async () => ({ status: 200 }) };
-    const { driver, log } = buildFakeDriver();
+    const { driver, log } = makeFakeDriver();
     const adapter         = new Adapter(driver);
 
     const req = buildReq({ body: { logout_token: 'token' } });
@@ -111,7 +112,7 @@ test('backchannelRoute répond avec le status retourné par handle', async () =>
 
 test('backchannelRoute appelle deny quand handle retourne 400', async () => {
     const fakeBackchannel = { handle: async () => ({ status: 400 }) };
-    const { driver, log } = buildFakeDriver();
+    const { driver, log } = makeFakeDriver();
     const adapter         = new Adapter(driver);
 
     await adapter.backchannelRoute(fakeBackchannel)(buildReq(), {});

@@ -49,29 +49,36 @@ function makeJwt(payload) {
     return `${header}.${body}.fakesig`;
 }
 
-function buildFakeDriver() {
-    const log = { principal: null, redirect: null, status: null, continued: false };
-    return {
-        driver: {
-            getSession:   (req)       => req.session,
-            getHeaders:   (req)       => req.headers,
-            getBody:      (req)       => req.body,
-            getUrl:       (req)       => req.url,
-            getSessionId: (req)       => req.sessionId,
-            setPrincipal: (req, p)    => { req.principal = p; log.principal = p; },
-            redirect:     (_, url)    => { log.redirect = url; },
-            deny:         (_, status) => { log.status = status; },
-            ok:           ()          => { log.status = 200; },
-            continue:     (next)      => { log.continued = true; if (next) next(); },
+function makeFakeDriver(overrides = {}) {
+    const log = {};   // alias = calls
+
+    const driver = {
+        getSession:   (req) => req.session,
+        getHeaders:   (req) => req.headers,
+        getBody:      (req) => req.body,
+        getUrl:       (req) => req.url,
+        getSessionId: (req) => req.sessionId,
+        setPrincipal: (req, p)     => { log.principal = p; },
+        redirect:     (reply, url) => { log.redirect = url; },
+        deny:         (reply, s)   => { log.deny = s; log.status = s; },
+        ok:           (reply)      => { log.ok = true; log.status = 200; },
+        wrap: (logic) => async (req, reply) => {
+            log.continued = false;
+            await logic(req, reply, () => { log.continued = true; });
         },
-        log,
+        ...overrides,
     };
+
+    return { driver, log, calls: log };  // calls et log pointent sur le même objet
 }
 
 function buildReq(overrides = {}) {
     return {
-        headers: {}, session: {}, sessionId: 'sess-123',
-        body: {}, url: new URL('https://app.example.com/callback'),
+        session:   {},
+        headers:   {},
+        body:      {},
+        url:       '/',
+        sessionId: 'sess-id',
         ...overrides,
     };
 }
@@ -89,4 +96,4 @@ function buildFakeClient2() {
 }
 
 
-module.exports = {FAKE_METADATA, BASE_OPTIONS, buildFakeClient,buildFakeFactories,buildFakeAuthClient,makeJwt,buildFakeDriver,buildReq,buildFakeClient2};
+module.exports = {FAKE_METADATA, BASE_OPTIONS, buildFakeClient,buildFakeFactories,buildFakeAuthClient,makeJwt,makeFakeDriver,buildReq,buildFakeClient2};
