@@ -1,6 +1,6 @@
 {
   "name": "sso_keycloak",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "Adaptateur Keycloak Server-Side",
   "keywords": [
     "Keycloak",
@@ -16,6 +16,7 @@
     "test": "node --test"
   },
   "dependencies": {
+    "fastify-plugin": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.0.1",
     "openid-client": "^6.8.4"

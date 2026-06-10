@@ -1,5 +1,6 @@
 const { createSso } = require('../core');
 const Adapter       = require('../../adapters/Adapter');
+const fp = require('fastify-plugin');
 
 function required(value, name) {
     if (value === undefined || value === null)
@@ -19,7 +20,7 @@ module.exports = function createFastifySso(deps = {}, config = {}) {
     required(config.clientSecret,  'config.clientSecret');
     required(config.requiredRole,  'config.requiredRole');
 
-    return async function ssoPlugin(fastify) {
+    return fp(async function ssoPlugin(fastify) {
         // Store partagé entre le plugin session ET le backchannel
         // Même rôle que new session.MemoryStore() dans express.js
         // → le user peut injecter le sien via config.sessionStore (ex: connect-redis)
@@ -53,5 +54,5 @@ module.exports = function createFastifySso(deps = {}, config = {}) {
             if (PUBLIC_PATHS.has(req.url.split('?')[0])) return;
             await guard(req, reply);
         });
-    };
+    });
 };

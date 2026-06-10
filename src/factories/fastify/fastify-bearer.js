@@ -1,5 +1,6 @@
 const Adapter       = require('../../adapters/Adapter');
 const { createSso } = require('../core');
+const fp = require('fastify-plugin');
 
 function required(value, name) {
     if (value === undefined || value === null)
@@ -13,20 +14,22 @@ module.exports = function createFastifyBearerSso(deps = {}, config = {}) {
     required(config.clientSecret, 'config.clientSecret');
     required(config.requiredRole, 'config.requiredRole');
 
+    // Préfixes publics configurables (ex: doc Swagger)
+    const publicPrefixes = config.publicPrefixes ?? [];
+
     const adapter = new Adapter(Adapter.DRIVERS.FASTIFY);
     let guard     = null;
 
     const ready = createSso({ ...config, fetch: deps.fetch })
-        .then(sso => {
-            guard = adapter.guard(sso.strategies.introspection);
-        })
-        .catch(err => {
-            console.error('[sso_keycloak/fastify-bearer] Init échouée :', err);
-            process.exit(1);
-        });
+        .then(sso => { guard = adapter.guard(sso.strategies.introspection); })
+        .catch(err => { console.error('[sso_keycloak/fastify-bearer] Init échouée :', err); process.exit(1); });
 
-    return async function fastifyBearerPlugin(fastify) {
+    return fp(async function fastifyBearerPlugin(fastify) {
         await ready;
-        fastify.addHook('onRequest', guard);
-    };
+        fastify.addHook('onRequest', async (req, reply) => {
+            const path = req.url.split('?')[0];
+            if (publicPrefixes.some(p => path.startsWith(p))) return;  // route publique
+            await guard(req, reply);
+        });
+    });
 };
