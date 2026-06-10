@@ -1,4 +1,4 @@
-# Stratégie de l'adaptateur : 
+# Stratégie OIDC : 
 
 ## authorizationCode reçoit :
 
