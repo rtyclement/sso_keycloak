@@ -85,7 +85,7 @@ test('compilePattern : caractères spéciaux échappés', () => {
 
 test('Test getRules et getRule(index) retourne le tableau des regles à appliquer', () => {
     const kc = new Keycloak({framework: 'express'});
-    kc.protect({},'/api','/flop','bearer');
+    kc.protect({},['/api','/flop'],'bearer');
     const rule=kc.getRule(0);
     assert.equal(rule.pattern[0],'/api');
     assert.equal(rule.pattern[1],'/flop');
