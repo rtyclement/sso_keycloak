@@ -38,3 +38,31 @@ test('protect en mode session monte les routes d\'auth au premier appel', async 
 
     assert.ok(app.mounted !== null);
 });
+
+test('mountAuthRoutes n\'est appelé qu\'une seule fois même avec plusieurs protect session', async () => {
+    let mountCount = 0;
+    class TestDriver extends DriverContrat {
+        getSession()              { return {}; }
+        getHeaders()              { return {}; }
+        getBody()                 { return {}; }
+        getUrl()                  { return new URL('http://x/'); }
+        getSessionId()            { return 'id'; }
+        setPrincipal()            {}
+        redirect()                {}
+        deny()                    {}
+        ok()                      {}
+        wrap(l)                   { return l; }
+        install(app, p, h)        {}
+        mountAuthRoutes(app, sso) { mountCount++; }
+    }
+
+    const kc = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
+
+    kc.protect({}, '/dashboard', 'session');
+    kc.protect({}, '/admin',     'session');
+    kc.protect({}, '/profile',   'session');
+
+    await kc.ready();
+
+    assert.equal(mountCount, 1);
+});

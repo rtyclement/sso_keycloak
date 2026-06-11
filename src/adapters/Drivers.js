@@ -28,6 +28,13 @@ class ExpressDriver extends DriverContrat {
             handler(req, res, next);
         });
     }
+    mountAuthRoutes(app, sso) {
+    const adapter = new (require('./Adapter'))(this);
+
+    app.get ('/login',              adapter.loginRoute(sso.strategies.authorizationCode));
+    app.get ('/callback',           adapter.callbackRoute(sso.strategies.authorizationCode, sso.backchannel));
+    app.post('/backchannel-logout', adapter.backchannelRoute(sso.backchannel));
+}
 }
 
 class FastifyDriver extends DriverContrat {
