@@ -45,3 +45,33 @@ test('EXPRESS.install avec routes null monte globalement', () => {
     // app.use(handler) — pas de chemin
     assert.equal(calls[0][0], handler);
 });
+
+test('FASTIFY.install ajoute un hook onRequest', () => {
+    const calls = [];
+    const app   = { addHook: (name, fn) => calls.push({ name, fn }) };
+    const handler = () => {};
+
+    DRIVERS.FASTIFY.install(app, null, handler);
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].name, 'onRequest');
+});
+
+test('FASTIFY.install filtre les routes si fourni', async () => {
+    const hooks = [];
+    const app   = { addHook: (name, fn) => hooks.push(fn) };
+    const calls = [];
+    const handler = async (req, reply) => calls.push(req.url);
+
+    DRIVERS.FASTIFY.install(app, '/api', handler);
+
+    const hook = hooks[0];
+
+    // matche → handler appelé
+    await hook({ url: '/api' }, {});
+    assert.equal(calls.length, 1);
+
+    // ne matche pas → handler non appelé
+    await hook({ url: '/autre' }, {});
+    assert.equal(calls.length, 1);   // toujours 1
+});
