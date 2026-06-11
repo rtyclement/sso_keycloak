@@ -119,3 +119,31 @@ test('ExpressDriver.mountAuthRoutes enregistre /login, /callback et /backchannel
     assert.ok(routes.some(r => r.method === 'GET'  && r.path === '/callback'));
     assert.ok(routes.some(r => r.method === 'POST' && r.path === '/backchannel-logout'));
 });
+
+test('FastifyDriver.mountAuthRoutes enregistre /login, /callback et /backchannel-logout', async () => {
+    const routes = [];
+    const app    = {
+        get:  (path, handler) => routes.push({ method: 'GET',  path }),
+        post: (path, handler) => routes.push({ method: 'POST', path }),
+        addHook: () => {},
+    };
+
+    const sso = {
+        strategies: {
+            authorizationCode: {
+                startLogin:     async () => ({ type: 'redirect', url: '/kc' }),
+                handleCallback: async () => ({ type: 'session',  redirectTo: '/' }),
+            },
+        },
+        backchannel: {
+            handle:       async () => ({ status: 200 }),
+            trackSession: () => {},
+        },
+    };
+
+    DRIVERS.FASTIFY.mountAuthRoutes(app, sso);
+
+    assert.ok(routes.some(r => r.method === 'GET'  && r.path === '/login'));
+    assert.ok(routes.some(r => r.method === 'GET'  && r.path === '/callback'));
+    assert.ok(routes.some(r => r.method === 'POST' && r.path === '/backchannel-logout'));
+});

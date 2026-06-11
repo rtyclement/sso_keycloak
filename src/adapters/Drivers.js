@@ -65,6 +65,13 @@ class FastifyDriver extends DriverContrat {
             await handler(req, reply);
         });
     }
+    mountAuthRoutes(app, sso) {
+        const adapter = new (require('./Adapter'))(this);
+
+        app.get ('/login',              adapter.loginRoute(sso.strategies.authorizationCode));
+        app.get ('/callback',           adapter.callbackRoute(sso.strategies.authorizationCode, sso.backchannel));
+        app.post('/backchannel-logout', adapter.backchannelRoute(sso.backchannel));
+    }
 }
 
 const DRIVERS = Object.freeze({
