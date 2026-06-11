@@ -64,10 +64,11 @@ class Keycloak {
             const match = matchRule(this.#rules, url);
             if (!match)           return next();
             if (req._ssoHandled)  return next();
+            const sso = await this.#ready; 
             req._ssoHandled = true;
             return next();
         })
-        
+
         this.#driver.install(app,patterns,handler);
     }
 
