@@ -31,3 +31,17 @@ test('protect échoue si app est absent', () => {
     const kc = new Keycloak({ framework: 'express' });
     assert.throws(() => kc.protect(null, '/api', 'bearer'), /app/i);
 });
+
+test('protect échoue si mode est absent', () => {
+    const kc = new Keycloak({ framework: 'express' });
+    assert.throws(() => kc.protect({}, '/api', null), /mode/i);
+});
+
+test('protect échoue si mode est diffent de session ou bearer', () => {
+    const kc = new Keycloak({ framework: 'express' });
+    assert.throws(() => kc.protect({}, '/api', 'fizhfoiahf'), /mode/i);
+    assert.throws(() => kc.protect({}, '/api', ''), /mode/i);
+    assert.doesNotThrow(() => kc.protect({}, '/api', 'session'), /mode/i);
+    assert.doesNotThrow(() => kc.protect({}, '/api', 'bearer'), /mode/i);
+});
+
