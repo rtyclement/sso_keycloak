@@ -8,6 +8,9 @@ class Keycloak {
         if(!app){
             throw new Error("[Keycloak] Erreur dans l'injection de l'application")
         }
+        if(!mode || !['session','bearer'].includes(mode)){
+            throw new Error("[Keycloak] Erreur dans le mode de protection demandé")
+        }
     }
 }
 
