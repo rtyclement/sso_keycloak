@@ -17,17 +17,24 @@ function matchRule(rules, url) {
     }
     return null;
 }
+const DRIVERS = require('./adapters/Drivers');
 
 class Keycloak {
-    #framework;
+    #driver;
+    #config;
     #rules = [];
 
-    constructor({framework} = {}){
-        if(!framework || !['express','fastify'].includes(framework)){
-            throw new Error("[Keycloak] Erreur dans le choix du framework. Framework supporté : 'express' et 'fastify'");
-        }
-        this.#framework=framework;
+    constructor(driver, config) {
+        const known = Object.values(DRIVERS);
+        if (!driver || !known.includes(driver))
+            throw new Error("[Keycloak] driver invalide. Utilisez Drivers.EXPRESS ou Drivers.FASTIFY");
+        if (!config)
+            throw new Error("[Keycloak] config est obligatoire");
+
+        this.#driver = driver;
+        this.#config = config;
     }
+
     protect(app,routes,mode,roles){
         if(!app){
             throw new Error("[Keycloak] Erreur dans l'injection de l'application");
@@ -51,9 +58,15 @@ class Keycloak {
             roles: rolesList
         })
     }
-    getFramework(){
-        return this.#framework;
+    getDriverType() {
+    for (const [key, value] of Object.entries(DRIVERS)) {
+      if (value === this.#driver) {
+        return key;
+      }
     }
+    return undefined;
+  }
+
     getRule(index){
         return this.#rules[index];
     }

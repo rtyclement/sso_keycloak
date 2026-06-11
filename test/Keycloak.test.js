@@ -1,6 +1,14 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
 const Keycloak = require('../src/Keycloak');
+const DRIVERS  = require('../src/adapters/Drivers');
+const VALID_CONFIG = {
+    issuerUrl:     'http://kc/realms/r',
+    clientId:      'c',
+    clientSecret:  's',
+    requiredRole:  'role',
+    sessionSecret: 'secret',
+};
 const { compilePattern } = require('../src/Keycloak');
 const { matchRule } = require('../src/Keycloak');
 
@@ -8,49 +16,51 @@ test('Keycloak est une classe instanciable', () => {
     assert.equal(typeof Keycloak, 'function');
 });
 
-test('Keycloak échoue si framework est absent', () => {
-    assert.throws(() => new Keycloak({}), /framework/i);
+test('Keycloak est instanciable avec un driver et une config', () => {
+    assert.doesNotThrow(() => new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG));
 });
 
-test('Keycloak échoue si framework est invalide', () => {
-    assert.throws(() => new Keycloak({ framework: 'django' }), /framework/i);
+test('Keycloak échoue si le driver est absent', () => {
+    assert.throws(() => new Keycloak(null, VALID_CONFIG), /driver/i);
 });
 
-test('Keycloak accepte express', () => {
-    assert.doesNotThrow(() => new Keycloak({ framework: 'express' }));
+test('Keycloak échoue si le driver n\'est pas un DRIVER reconnu', () => {
+    assert.throws(() => new Keycloak({ bidon: true }, VALID_CONFIG), /driver/i);
 });
 
-test('Keycloak accepte fastify', () => {
-    assert.doesNotThrow(() => new Keycloak({ framework: 'fastify' }));
+test('Keycloak accepte le driver FASTIFY', () => {
+    assert.doesNotThrow(() => new Keycloak(DRIVERS.FASTIFY, VALID_CONFIG));
 });
 
-test('Keycloak expose une méthode protect', () => {
-    const kc = new Keycloak({ framework: 'express' });
-    assert.equal(typeof kc.protect, 'function');
+test('Keycloak échoue si config est absente', () => {
+    assert.throws(() => new Keycloak(DRIVERS.EXPRESS), /config/i);
 });
+
+
 
 test('protect échoue si app est absent', () => {
-    const kc = new Keycloak({ framework: 'express' });
+    const kc = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
     assert.throws(() => kc.protect(null, '/api', 'bearer'), /app/i);
 });
 
 test('protect échoue si mode est absent', () => {
-    const kc = new Keycloak({ framework: 'express' });
+    const kc = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
     assert.throws(() => kc.protect({}, '/api', null), /mode/i);
 });
 
 test('protect échoue si mode est diffent de session ou bearer', () => {
-    const kc = new Keycloak({ framework: 'express' });
+    const kc = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
     assert.throws(() => kc.protect({}, '/api', 'fizhfoiahf'), /mode/i);
     assert.throws(() => kc.protect({}, '/api', ''), /mode/i);
     assert.doesNotThrow(() => kc.protect({}, '/api', 'session'), /mode/i);
     assert.doesNotThrow(() => kc.protect({}, '/api', 'bearer'), /mode/i);
 });
 
-test('Le constructeur enregistre bien le framework choisi', () => {
-    const kc = new Keycloak({framework: 'express'});
-    assert.equal(kc.getFramework(),'express');
+test('Le constructeur enregistre bien le drivers choisi', () => {
+    const kc = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    assert.equal(kc.getDriverType(),'EXPRESS');
 })
+ 
 
 test('compilePattern : null matche tout', () => {
     const re = compilePattern(null);
@@ -83,16 +93,16 @@ test('compilePattern : caractères spéciaux échappés', () => {
     assert.ok(!re.test('/apixv1'));
 });
 test('getRules retourne une copie — modifier le résultat ne pollue pas l\'état interne', () => {
-    const kc = new Keycloak({ framework: 'express' });
+    const kc = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
     kc.protect({}, '/api', 'bearer');
 
     kc.getRules().push({ mode: 'session', patterns: [] });
 
     assert.equal(kc.getRules().length, 1);
-});
+}); 
 
 test('protect enregistre une règle avec les bons champs', () => {
-    const kc  = new Keycloak({ framework: 'express' });
+    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
     const app = {};
 
     kc.protect(app, '/api', 'bearer');
@@ -103,7 +113,7 @@ test('protect enregistre une règle avec les bons champs', () => {
 });
 
 test('protect accepte un tableau de routes', () => {
-    const kc  = new Keycloak({ framework: 'express' });
+    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
     const app = {};
 
     kc.protect(app, ['/api', '/data'], 'bearer');
@@ -113,7 +123,7 @@ test('protect accepte un tableau de routes', () => {
 });
 
 test('protect empile les règles sans écraser', () => {
-    const kc  = new Keycloak({ framework: 'express' });
+    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
     kc.protect({}, '/swagger', 'session');
     kc.protect({}, null, 'bearer');
 
@@ -123,7 +133,7 @@ test('protect empile les règles sans écraser', () => {
 });
 
 test('protect accepte routes null', () => {
-    const kc  = new Keycloak({ framework: 'express' });
+    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
     kc.protect({}, null, 'bearer');
     assert.equal(kc.getRule(0).patterns.length, 1);
     assert.ok(kc.getRule(0).patterns[0].test('/nimporte/quoi'));
@@ -132,21 +142,21 @@ test('protect accepte routes null', () => {
 });
 
 test('protect enregistre les roles', () => {
-    const kc  = new Keycloak({ framework: 'express' });
+    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
     kc.protect({}, '/api', 'bearer', ['admin', 'reader']);
 
     assert.deepEqual(kc.getRule(0).roles, ['admin', 'reader']);
 });
 
 test('protect normalise un role string en tableau', () => {
-    const kc  = new Keycloak({ framework: 'express' });
+    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
     kc.protect({}, '/api', 'bearer', 'admin');
 
     assert.deepEqual(kc.getRule(0).roles, ['admin']);
 });
 
 test('protect sans roles stocke un tableau vide', () => {
-    const kc  = new Keycloak({ framework: 'express' });
+    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
     kc.protect({}, '/api', 'bearer');
 
     assert.deepEqual(kc.getRule(0).roles, []);
