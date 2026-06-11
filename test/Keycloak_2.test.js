@@ -207,3 +207,69 @@ test('le handler appelle strategy.authenticate pour le mode bearer', async () =>
 
     assert.ok(authenticateCalled);
 });
+
+
+function makeTestDriver(onInstall) {
+    const calls = { deny: null, redirect: null, principal: null };
+    class TestDriver extends DriverContrat {
+        getSession()         { return {}; }
+        getHeaders()         { return {}; }
+        getBody()            { return {}; }
+        getUrl()             { return new URL('http://x/'); }
+        getSessionId()       { return 'id'; }
+        setPrincipal(req, p) { calls.principal = p; }
+        redirect(reply, url) { calls.redirect = url; }
+        deny(reply, s)       { calls.deny = s; }
+        ok()                 {}
+        wrap(l)              { return l; }
+        install(app, p, h)   { onInstall(h); }
+    }
+    return { driver: new TestDriver(), calls };
+}
+
+function makeConfig(authenticateResult) {
+    return {
+        ...VALID_CONFIG,
+        _client: buildFakeClient(),
+        _factories: {
+            introspection:     () => ({ authenticate: async () => authenticateResult }),
+            authorizationCode: () => ({ authenticate: async () => authenticateResult }),
+            backchannel:       () => ({ handle: async () => ({}), trackSession: () => {} }),
+        },
+    };
+}
+
+test('décision allow → setPrincipal + next()', async () => {
+    let installed = null;
+    const { driver, calls } = makeTestDriver(h => installed = h);
+    const kc = new Keycloak(driver, makeConfig({ type: 'allow', principal: { id: 99 } }));
+    kc.protect({}, '/api', 'bearer');
+
+    let nextCalled = false;
+    await installed({ url: '/api', headers: {} }, {}, () => { nextCalled = true; });
+
+    assert.ok(nextCalled);
+    assert.deepEqual(calls.principal, { id: 99 });
+});
+
+test('décision deny → driver.deny avec le bon status', async () => {
+    let installed = null;
+    const { driver, calls } = makeTestDriver(h => installed = h);
+    const kc = new Keycloak(driver, makeConfig({ type: 'deny', status: 403 }));
+    kc.protect({}, '/api', 'bearer');
+
+    await installed({ url: '/api', headers: {} }, {}, () => {});
+
+    assert.equal(calls.deny, 403);
+});
+
+test('décision redirect → driver.redirect avec la bonne url', async () => {
+    let installed = null;
+    const { driver, calls } = makeTestDriver(h => installed = h);
+    const kc = new Keycloak(driver, makeConfig({ type: 'redirect', url: '/login' }));
+    kc.protect({}, '/api', 'session');
+
+    await installed({ url: '/api', headers: {} }, {}, () => {});
+
+    assert.equal(calls.redirect, '/login');
+});
