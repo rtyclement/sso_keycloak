@@ -82,6 +82,7 @@ module.exports = createSso({}, {
     clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
     requiredRole: process.env.KEYCLOAK_CLIENT_ROLE,
     allowHttp:    process.env.KEYCLOAK_ALLOW_HTTP === 'true',
+    publicPrefixes: ["/routes/qui/echapperons/a/lauth/keycloak"] // Dans le cadre d'une API avoir par exemple l'endpoint du swagger disponible
 });
 ```
 
@@ -117,14 +118,14 @@ const ssoPlugin = require('./middleware/sso_middleware');
 /*
 [....]
 */
-// Le plugin SSO expose /login, /callback, /backchannel-logout
-// et protège toutes les autres routes automatiquement
-await fastify.register(ssoPlugin);
-
-// Déclarez vos routes protégées après l'enregistrement du plugin
-fastify.get('/info', async (req, reply) => {
-    return { message: 'ok' };
-});
+async function start() {
+  await fastify.register(ssoPlugin);
+/*
+[enregistrement des routes à utliser par fastify après enregistrement....]
+*/
+  await fastify.listen(/* host and port */);
+}
+start().catch(err => { console.error(err); process.exit(1); });
 /*
 [....]
 */
