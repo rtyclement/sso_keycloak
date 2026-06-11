@@ -17,6 +17,7 @@ function matchRule(rules, url) {
     }
     return null;
 }
+const DriverContrat = require('./adapters/DriverContrat');
 const DRIVERS = require('./adapters/Drivers');
 
 class Keycloak {
@@ -25,8 +26,7 @@ class Keycloak {
     #rules = [];
 
     constructor(driver, config) {
-        const known = Object.values(DRIVERS);
-        if (!driver || !known.includes(driver))
+        if (!driver || !(driver instanceof DriverContrat))
             throw new Error("[Keycloak] driver invalide. Utilisez Drivers.EXPRESS ou Drivers.FASTIFY");
         if (!config)
             throw new Error("[Keycloak] config est obligatoire");
