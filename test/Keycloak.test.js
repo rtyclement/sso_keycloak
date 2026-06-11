@@ -124,3 +124,22 @@ test('protect accepte un tableau de routes', () => {
     assert.equal(kc.getRules().length, 1);
     assert.equal(kc.getRule(0).patterns.length, 2);
 });
+
+test('protect empile les règles sans écraser', () => {
+    const kc  = new Keycloak({ framework: 'express' });
+    kc.protect({}, '/swagger', 'session');
+    kc.protect({}, null, 'bearer');
+
+    assert.equal(kc._rules.length, 2);
+    assert.equal(kc._rules[0].mode, 'session');
+    assert.equal(kc._rules[1].mode, 'bearer');
+});
+
+test('protect accepte routes null', () => {
+    const kc  = new Keycloak({ framework: 'express' });
+    kc.protect({}, null, 'bearer');
+    console.log(JSON.stringify(kc.getRules()));
+    assert.equal(kc._rules[0].patterns.length, 1);
+    assert.ok(kc._rules[0].patterns[0].test('/nimporte/quoi'));
+    assert.ok(!kc._rules[0].patterns[0].test('gnfngfngfn'));
+});
