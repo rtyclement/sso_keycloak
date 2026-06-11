@@ -14,6 +14,24 @@ const VALID_CONFIG = {
 const { compilePattern } = require('../src/Keycloak');
 const { matchRule } = require('../src/Keycloak');
 
+const installed = [];
+class TestDriver extends DriverContrat {
+        getSession()   { return {}; }
+        getHeaders()   { return {}; }
+        getBody()      { return {}; }
+        getUrl()       { return new URL('http://x/'); }
+        getSessionId() { return 'id'; }
+        setPrincipal() {}
+        redirect()     {}
+        deny()         {}
+        ok()           {}
+        wrap(l)        { return l; }
+        install(app, patterns, handler) {
+            installed.push({ app, patterns, handler });
+        }
+}
+
+
 test('Keycloak est une classe instanciable', () => {
     assert.equal(typeof Keycloak, 'function');
 });
@@ -73,7 +91,7 @@ test('Keycloak échoue si config est absente', () => {
 
 
 test('protect échoue si app est absent', () => {
-    const kc = new Keycloak(DRIVERS.EXPRESS, {
+    const kc = new Keycloak(new TestDriver(), {
             ...VALID_CONFIG,
             _client: buildFakeClient(),
         });
@@ -81,7 +99,7 @@ test('protect échoue si app est absent', () => {
 });
 
 test('protect échoue si mode est absent', () => {
-    const kc = new Keycloak(DRIVERS.EXPRESS, {
+    const kc = new Keycloak(new TestDriver(), {
             ...VALID_CONFIG,
             _client: buildFakeClient(),
         });
@@ -89,7 +107,7 @@ test('protect échoue si mode est absent', () => {
 });
 
 test('protect échoue si mode est diffent de session ou bearer', () => {
-    const kc = new Keycloak(DRIVERS.EXPRESS, {
+    const kc = new Keycloak(new TestDriver(), {
             ...VALID_CONFIG,
             _client: buildFakeClient(),
         });
@@ -139,7 +157,7 @@ test('compilePattern : caractères spéciaux échappés', () => {
     assert.ok(!re.test('/apixv1'));
 });
 test('getRules retourne une copie — modifier le résultat ne pollue pas l\'état interne', () => {
-    const kc = new Keycloak(DRIVERS.EXPRESS, {
+    const kc = new Keycloak(new TestDriver(), {
             ...VALID_CONFIG,
             _client: buildFakeClient(),
         });
@@ -151,7 +169,7 @@ test('getRules retourne une copie — modifier le résultat ne pollue pas l\'ét
 }); 
 
 test('protect enregistre une règle avec les bons champs', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+    const kc  = new Keycloak(new TestDriver(), {
             ...VALID_CONFIG,
             _client: buildFakeClient(),
         });
@@ -165,7 +183,7 @@ test('protect enregistre une règle avec les bons champs', () => {
 });
 
 test('protect accepte un tableau de routes', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+    const kc  = new Keycloak(new TestDriver(), {
             ...VALID_CONFIG,
             _client: buildFakeClient(),
         });
@@ -178,7 +196,7 @@ test('protect accepte un tableau de routes', () => {
 });
 
 test('protect empile les règles sans écraser', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+    const kc  = new Keycloak(new TestDriver(), {
             ...VALID_CONFIG,
             _client: buildFakeClient(),
         });
@@ -191,7 +209,7 @@ test('protect empile les règles sans écraser', () => {
 });
 
 test('protect accepte routes null', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+    const kc  = new Keycloak(new TestDriver(), {
             ...VALID_CONFIG,
             _client: buildFakeClient(),
         });
@@ -203,7 +221,7 @@ test('protect accepte routes null', () => {
 });
 
 test('protect enregistre les roles', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+    const kc  = new Keycloak(new TestDriver(), {
             ...VALID_CONFIG,
             _client: buildFakeClient(),
         });
@@ -213,7 +231,7 @@ test('protect enregistre les roles', () => {
 });
 
 test('protect normalise un role string en tableau', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+    const kc  = new Keycloak(new TestDriver(), {
             ...VALID_CONFIG,
             _client: buildFakeClient(),
         });
@@ -223,7 +241,7 @@ test('protect normalise un role string en tableau', () => {
 });
 
 test('protect sans roles stocke un tableau vide', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+    const kc  = new Keycloak(new TestDriver(), {
             ...VALID_CONFIG,
             _client: buildFakeClient(),
         });

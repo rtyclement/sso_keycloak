@@ -59,7 +59,12 @@ class Keycloak {
             patterns: patterns,
             roles: rolesList
         })
+        const handler = this.#driver.wrap(async (req,reply,next)=>{
+            return next();
+        })
+        this.#driver.install(app,patterns,handler);
     }
+    
     getDriverType() {
     for (const [key, value] of Object.entries(DRIVERS)) {
       if (value === this.#driver) {
