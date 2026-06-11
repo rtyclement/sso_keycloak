@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert   = require('node:assert/strict');
 const Keycloak = require('../src/Keycloak');
 const DRIVERS  = require('../src/adapters/Drivers');
+const DriverContrat = require('../src/adapters/DriverContrat');
 const VALID_CONFIG = {
     issuerUrl:     'http://kc/realms/r',
     clientId:      'c',
@@ -14,6 +15,23 @@ const { matchRule } = require('../src/Keycloak');
 
 test('Keycloak est une classe instanciable', () => {
     assert.equal(typeof Keycloak, 'function');
+});
+
+test('Keycloak accepte tout driver instanceof DriverContrat', () => {
+    class MonDriver extends DriverContrat {
+        getSession()   { return {}; }
+        getHeaders()   { return {}; }
+        getBody()      { return {}; }
+        getUrl()       { return new URL('http://x/'); }
+        getSessionId() { return 'id'; }
+        setPrincipal() {}
+        redirect()     {}
+        deny()         {}
+        ok()           {}
+        wrap(l)        { return l; }
+        install()      {}
+    }
+    assert.doesNotThrow(() => new Keycloak(new MonDriver(), VALID_CONFIG));
 });
 
 test('Keycloak est instanciable avec un driver et une config', () => {

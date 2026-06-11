@@ -10,7 +10,7 @@
  * @property {(reply: any, status: number) => void}  deny          Refuse l'accès avec un code HTTP
  * @property {(reply: any) => void}                  ok            Répond 200
  * @property {(logic: Function) => Function}         wrap          Adapte la logique au modèle d'exécution du framework
- * @property {(app: any, routes: any, handler: Function) => void} install  Installe le handler sur l'app
+ * @property {(app: any, patterns: RegExp[], handler: Function) => void} install  Installe le handler sur l'app
  */
 
 /**
@@ -30,7 +30,7 @@ class DriverContrat {
     deny(reply, status)        { throw new Error("[Driver] deny() not implemented"); }
     ok(reply)                  { throw new Error("[Driver] ok() not implemented"); }
     wrap(logic)                { throw new Error("[Driver] wrap() not implemented"); }
-    install(app, routes, handler) { throw new Error("[Driver] install() not implemented"); }
+    install(app, patterns, handler) { throw new Error("[Driver] install() not implemented"); }
 }
 
 module.exports = DriverContrat;
