@@ -26,6 +26,12 @@ class Keycloak {
         if(!mode || !['session','bearer'].includes(mode)){
             throw new Error("[Keycloak] Erreur dans le mode de protection demandé. Mode supoorté : 'session' et 'bearer'");
         }
+        const routesList = Array.isArray(routes) ? routes : [routes]
+        const patterns = routesList.map(compilePattern)
+        this._rules.push({
+            mode: mode,
+            patterns: patterns
+        })
     }
     getFramework(){
         return this._framework;
