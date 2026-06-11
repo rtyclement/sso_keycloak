@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert   = require('node:assert/strict');
 const Keycloak = require('../src/Keycloak');
 const { compilePattern } = require('../src/Keycloak');
+const { matchRule } = require('../src/Keycloak');
 
 test('Keycloak est une classe instanciable', () => {
     assert.equal(typeof Keycloak, 'function');
@@ -149,4 +150,50 @@ test('protect sans roles stocke un tableau vide', () => {
     kc.protect({}, '/api', 'bearer');
 
     assert.deepEqual(kc.getRule(0).roles, []);
+});
+
+test('matchRule retourne null si aucune règle', () => {
+    assert.equal(matchRule([], '/api'), null);
+});
+
+test('matchRule retourne la première règle qui matche', () => {
+    const rules = [
+        { patterns: [compilePattern('/swagger')], mode: 'session', roles: [] },
+        { patterns: [compilePattern(null)],       mode: 'bearer',  roles: [] },
+    ];
+    const match = matchRule(rules, '/swagger');
+    assert.equal(match.mode, 'session');
+});
+
+test('matchRule retourne la règle null si aucune route spécifique ne matche', () => {
+    const rules = [
+        { patterns: [compilePattern('/swagger')], mode: 'session', roles: [] },
+        { patterns: [compilePattern(null)],       mode: 'bearer',  roles: [] },
+    ];
+    const match = matchRule(rules, '/api/users');
+    assert.equal(match.mode, 'bearer');
+});
+
+test('matchRule retourne null si aucune règle ne matche', () => {
+    const rules = [
+        { patterns: [compilePattern('/swagger')], mode: 'session', roles: [] },
+    ];
+    assert.equal(matchRule(rules, '/api'), null);
+});
+
+test('matchRule prend le premier match — pas le suivant', () => {
+    const rules = [
+        { patterns: [compilePattern('/api')], mode: 'session', roles: [] },
+        { patterns: [compilePattern('/api')], mode: 'bearer',  roles: [] },
+    ];
+    assert.equal(matchRule(rules, '/api'), rules[0]);
+});
+
+test('matchRule matche si au moins un pattern de la règle matche', () => {
+    const rules = [
+        { patterns: [compilePattern('/a'), compilePattern('/b')], mode: 'bearer', roles: [] },
+    ];
+    assert.ok(matchRule(rules, '/a'));
+    assert.ok(matchRule(rules, '/b'));
+    assert.equal(matchRule(rules, '/c'), null);
 });
