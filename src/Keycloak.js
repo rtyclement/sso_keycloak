@@ -3,6 +3,7 @@ class Keycloak {
         if(!framework || !['express','fastify'].includes(framework)){
             throw new Error("[Keycloak] Erreur dans le choix du framework. Framework supporté : 'express' et 'fastify'");
         }
+        this._framework=framework;
     }
     protect(app,routes,mode,roles){
         if(!app){
@@ -11,6 +12,9 @@ class Keycloak {
         if(!mode || !['session','bearer'].includes(mode)){
             throw new Error("[Keycloak] Erreur dans le mode de protection demandé. Mode supoorté : 'session' et 'bearer'");
         }
+    }
+    getFramework(){
+        return this._framework;
     }
 }
 
