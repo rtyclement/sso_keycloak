@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
 const Keycloak = require('../src/Keycloak');
+const { compilePattern } = require('../src/Keycloak');
 
 test('Keycloak est une classe instanciable', () => {
     assert.equal(typeof Keycloak, 'function');
@@ -50,8 +51,6 @@ test('Le constructeur enregistre bien le framework choisi', () => {
     assert.equal(kc.getFramework(),'express');
 })
 
-const { compilePattern } = require('../src/Keycloak');
-
 test('compilePattern : null matche tout', () => {
     const re = compilePattern(null);
     assert.ok(re.test('/'));
@@ -82,26 +81,13 @@ test('compilePattern : caractères spéciaux échappés', () => {
     assert.ok(re.test('/api/v1'));
     assert.ok(!re.test('/apixv1'));
 });
+test('getRules retourne une copie — modifier le résultat ne pollue pas l\'état interne', () => {
+    const kc = new Keycloak({ framework: 'express' });
+    kc.protect({}, '/api', 'bearer');
 
-test('Test getRules et getRule(index) retourne le tableau des regles à appliquer', () => {
-    const kc = new Keycloak({framework: 'express'});
-    kc._rules=[{
-            mode: "bearer",
-            patterns: ['/api','/flop']
-        }];
-    const rule=kc.getRule(0);
-    assert.equal(rule.patterns[0],'/api');
-    assert.equal(rule.patterns[1],'/flop');
-    assert.equal(rule.mode,'bearer');
-    assert.equal(kc.getRules().length,1);
-    kc._rules.push({
-            mode: "session",
-            patterns: ['/user/*']
-        })
-    const rule2=kc.getRule(1);
-    assert.equal(rule2.patterns[0],'/user/*');
-    assert.equal(rule2.mode,'session');
-    assert.equal(kc.getRules().length,2);
+    kc.getRules().push({ mode: 'session', patterns: [] });
+
+    assert.equal(kc.getRules().length, 1);
 });
 
 test('protect enregistre une règle avec les bons champs', () => {
@@ -140,6 +126,7 @@ test('protect accepte routes null', () => {
     kc.protect({}, null, 'bearer');
     assert.equal(kc.getRule(0).patterns.length, 1);
     assert.ok(kc.getRule(0).patterns[0].test('/nimporte/quoi'));
+    assert.ok(kc.getRule(0).patterns[0].test('/'));
     assert.ok(!kc.getRule(0).patterns[0].test('gnfngfngfn'));
 });
 

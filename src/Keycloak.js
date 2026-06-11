@@ -12,12 +12,14 @@ function compilePattern(pattern) {
 }
 
 class Keycloak {
+    #framework;
+    #rules = [];
+
     constructor({framework} = {}){
         if(!framework || !['express','fastify'].includes(framework)){
             throw new Error("[Keycloak] Erreur dans le choix du framework. Framework supporté : 'express' et 'fastify'");
         }
-        this._framework=framework;
-        this._rules=[]
+        this.#framework=framework;
     }
     protect(app,routes,mode,roles){
         if(!app){
@@ -36,20 +38,20 @@ class Keycloak {
             ? []
             : Array.isArray(roles) ? roles : [roles];
 
-        this._rules.push({
+        this.#rules.push({
             mode: mode,
             patterns: patterns,
             roles: rolesList
         })
     }
     getFramework(){
-        return this._framework;
+        return this.#framework;
     }
     getRule(index){
-        return this._rules[index];
+        return this.#rules[index];
     }
     getRules(){
-        return this._rules;
+        return [...this.#rules];
     }
 }
 
