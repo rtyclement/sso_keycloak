@@ -49,3 +49,36 @@ test('Le constructeur enregistre bien le framework choisi', () => {
     const kc = new Keycloak({framework: 'express'});
     assert.equal(kc.getFramework(),'express');
 })
+
+const { compilePattern } = require('../src/Keycloak');
+
+test('compilePattern : null matche tout', () => {
+    const re = compilePattern(null);
+    assert.ok(re.test('/'));
+    assert.ok(re.test('/api'));
+    assert.ok(re.test('/api/users/42'));
+});
+
+test('compilePattern : route exacte', () => {
+    const re = compilePattern('/swagger');
+    assert.ok(re.test('/swagger'));
+    assert.ok(!re.test('/swagger/'));
+    assert.ok(!re.test('/swagger/ui'));
+    assert.ok(!re.test('/other'));
+});
+
+test('compilePattern : glob /* inclut la base et les descendants', () => {
+    const re = compilePattern('/swagger/*');
+    assert.ok(re.test('/swagger'));
+    assert.ok(re.test('/swagger/'));
+    assert.ok(re.test('/swagger/ui'));
+    assert.ok(re.test('/swagger/a/b/c'));
+    assert.ok(!re.test('/other'));
+    assert.ok(!re.test('/swaggerx'));
+});
+
+test('compilePattern : caractères spéciaux échappés', () => {
+    const re = compilePattern('/api/v1');
+    assert.ok(re.test('/api/v1'));
+    assert.ok(!re.test('/apixv1'));
+});
