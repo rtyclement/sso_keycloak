@@ -17,7 +17,7 @@ class Keycloak {
             throw new Error("[Keycloak] Erreur dans le choix du framework. Framework supporté : 'express' et 'fastify'");
         }
         this._framework=framework;
-        this.rules=[]
+        this._rules=[]
     }
     protect(app,routes,mode,roles){
         if(!app){
@@ -26,20 +26,15 @@ class Keycloak {
         if(!mode || !['session','bearer'].includes(mode)){
             throw new Error("[Keycloak] Erreur dans le mode de protection demandé. Mode supoorté : 'session' et 'bearer'");
         }
-        const routesListe = Array.isArray(routes) ? routes : [routes] 
-        this.rules.push({
-            mode: mode,
-            pattern: routesListe
-        })
     }
     getFramework(){
         return this._framework;
     }
     getRule(index){
-        return this.rules[index];
+        return this._rules[index];
     }
     getRules(){
-        return this.rules;
+        return this._rules;
     }
 }
 

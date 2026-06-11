@@ -85,16 +85,42 @@ test('compilePattern : caractères spéciaux échappés', () => {
 
 test('Test getRules et getRule(index) retourne le tableau des regles à appliquer', () => {
     const kc = new Keycloak({framework: 'express'});
-    kc.protect({},['/api','/flop'],'bearer');
+    kc._rules=[{
+            mode: "bearer",
+            patterns: ['/api','/flop']
+        }];
     const rule=kc.getRule(0);
-    assert.equal(rule.pattern[0],'/api');
-    assert.equal(rule.pattern[1],'/flop');
+    assert.equal(rule.patterns[0],'/api');
+    assert.equal(rule.patterns[1],'/flop');
     assert.equal(rule.mode,'bearer');
     assert.equal(kc.getRules().length,1);
-
-    kc.protect({},'/user/*','session');
+    kc._rules.push({
+            mode: "session",
+            patterns: ['/user/*']
+        })
     const rule2=kc.getRule(1);
-    assert.equal(rule2.pattern[0],'/user/*');
+    assert.equal(rule2.patterns[0],'/user/*');
     assert.equal(rule2.mode,'session');
     assert.equal(kc.getRules().length,2);
+});
+
+test('protect enregistre une règle avec les bons champs', () => {
+    const kc  = new Keycloak({ framework: 'express' });
+    const app = {};
+
+    kc.protect(app, '/api', 'bearer');
+
+    assert.equal(kc.getRules().length, 1);
+    assert.equal(kc.getRule(0).mode, 'bearer');
+    assert.ok(kc.getRule(0).patterns[0] instanceof RegExp);
+});
+
+test('protect accepte un tableau de routes', () => {
+    const kc  = new Keycloak({ framework: 'express' });
+    const app = {};
+
+    kc.protect(app, ['/api', '/data'], 'bearer');
+
+    assert.equal(kc.getRules().length, 1);
+    assert.equal(kc.getRule(0).patterns.length, 2);
 });
