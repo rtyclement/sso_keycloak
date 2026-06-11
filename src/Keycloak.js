@@ -1,15 +1,15 @@
 class Keycloak {
     constructor({framework} = {}){
         if(!framework || !['express','fastify'].includes(framework)){
-            throw new Error("[Keycloak] Erreur dans le choix du framework. Framework supporté : 'Express' et 'Fastify'");
+            throw new Error("[Keycloak] Erreur dans le choix du framework. Framework supporté : 'express' et 'fastify'");
         }
     }
     protect(app,routes,mode,roles){
         if(!app){
-            throw new Error("[Keycloak] Erreur dans l'injection de l'application")
+            throw new Error("[Keycloak] Erreur dans l'injection de l'application");
         }
         if(!mode || !['session','bearer'].includes(mode)){
-            throw new Error("[Keycloak] Erreur dans le mode de protection demandé")
+            throw new Error("[Keycloak] Erreur dans le mode de protection demandé. Mode supoorté : 'session' et 'bearer'");
         }
     }
 }

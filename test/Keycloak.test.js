@@ -45,3 +45,7 @@ test('protect échoue si mode est diffent de session ou bearer', () => {
     assert.doesNotThrow(() => kc.protect({}, '/api', 'bearer'), /mode/i);
 });
 
+test('Le constructeur enregistre bien le framework choisi', () => {
+    const kc = new Keycloak({framework: 'express'});
+    assert.equal(kc.getFramework(),'express');
+})
