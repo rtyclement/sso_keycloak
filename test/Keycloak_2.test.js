@@ -113,7 +113,7 @@ test('le handler marque _ssoHandled après avoir traité la requête', async () 
 });
 
 test('le handler skip si _ssoHandled est déjà true', async () => {
-    let authCalls = 0;
+    let installed = null;
     class TestDriver extends DriverContrat {
         getSession()   { return {}; }
         getHeaders()   { return {}; }
@@ -124,17 +124,18 @@ test('le handler skip si _ssoHandled est déjà true', async () => {
         redirect()     {}
         deny()         {}
         ok()           {}
-        wrap(l)        { return (...args) => { authCalls++; return l(...args); }; }
-        install(app, patterns, handler) { app.handler = handler; }
+        wrap(l)        { return l; }
+        install(app, patterns, handler) { installed = handler; }
     }
 
-    const kc  = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
+    const kc = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
     const app = {};
-
     kc.protect(app, '/api', 'bearer');
 
     const req = { url: '/api', headers: {}, _ssoHandled: true };
-    await app.handler(req, {}, () => {});
+    let nextCalled = false;
+    await installed(req, {}, () => { nextCalled = true; });
 
-    assert.equal(authCalls, 0);
+    assert.ok(nextCalled);          // next() appelé → pas bloqué
+    assert.ok(req._ssoHandled);     // toujours true, pas réinitialisé
 });

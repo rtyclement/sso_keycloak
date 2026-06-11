@@ -60,11 +60,17 @@ class Keycloak {
             roles: rolesList
         })
         const handler = this.#driver.wrap(async (req,reply,next)=>{
+            const url   = (req.url ?? req.originalUrl ?? '/').split('?')[0];
+            const match = matchRule(this.#rules, url);
+            if (!match)           return next();
+            if (req._ssoHandled)  return next();
+            req._ssoHandled = true;
             return next();
         })
+        
         this.#driver.install(app,patterns,handler);
     }
-    
+
     getDriverType() {
     for (const [key, value] of Object.entries(DRIVERS)) {
       if (value === this.#driver) {
