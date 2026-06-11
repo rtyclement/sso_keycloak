@@ -22,28 +22,46 @@ test('FASTIFY implémente tout le contrat sans throw', () => {
     assert.equal(typeof d.install, 'function');
 });
 
-test('EXPRESS.install monte un middleware via app.use', () => {
+test('EXPRESS.install monte un middleware via app.use avec patterns', () => {
     const calls = [];
     const app   = { use: (...a) => calls.push(a) };
     const handler = () => {};
 
-    DRIVERS.EXPRESS.install(app, '/api', handler);
+    DRIVERS.EXPRESS.install(app, [/^\/api$/], handler);
 
     assert.equal(calls.length, 1);
-    // app.use('/api', handler) — routes passées en premier
-    assert.equal(calls[0][0], '/api');
-    assert.equal(calls[0][1], handler);
+    // c'est un wrapper middleware (function), pas handler directement
+    assert.equal(typeof calls[0][0], 'function');
 });
 
-test('EXPRESS.install avec routes null monte globalement', () => {
+test('EXPRESS.install sans patterns monte le handler directement', () => {
     const calls = [];
     const app   = { use: (...a) => calls.push(a) };
     const handler = () => {};
 
     DRIVERS.EXPRESS.install(app, null, handler);
 
-    // app.use(handler) — pas de chemin
-    assert.equal(calls[0][0], handler);
+    assert.equal(calls[0][0], handler);  // handler directement, pas de wrapper
+});
+
+test('EXPRESS.install filtre les routes', async () => {
+    const calls = [];
+    const app   = { use: (fn) => calls.push(fn) };
+    const hits  = [];
+    const handler = (req, res, next) => hits.push(req.originalUrl);
+
+    DRIVERS.EXPRESS.install(app, [/^\/api$/], handler);
+
+    const mw   = calls[0];
+    const next = { called: false };
+
+    // matche
+    await mw({ originalUrl: '/api' }, {}, () => {});
+    assert.equal(hits.length, 1);
+
+    // ne matche pas
+    await mw({ originalUrl: '/autre' }, {}, () => {});
+    assert.equal(hits.length, 1);
 });
 
 test('FASTIFY.install ajoute un hook onRequest', () => {
@@ -63,15 +81,13 @@ test('FASTIFY.install filtre les routes si fourni', async () => {
     const calls = [];
     const handler = async (req, reply) => calls.push(req.url);
 
-    DRIVERS.FASTIFY.install(app, '/api', handler);
+    DRIVERS.FASTIFY.install(app, [/^\/api$/], handler);
 
     const hook = hooks[0];
 
-    // matche → handler appelé
     await hook({ url: '/api' }, {});
     assert.equal(calls.length, 1);
 
-    // ne matche pas → handler non appelé
     await hook({ url: '/autre' }, {});
-    assert.equal(calls.length, 1);   // toujours 1
+    assert.equal(calls.length, 1);
 });

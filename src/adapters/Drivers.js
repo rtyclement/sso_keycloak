@@ -19,10 +19,16 @@ class ExpressDriver extends DriverContrat {
     }
 
     
-    install(app, routes, handler) {
-        if (routes === null || routes === undefined) { app.use(handler); return; }
-        const list = Array.isArray(routes) ? routes : [routes];
-        for (const path of list) app.use(path, handler);
+    install(app, patterns, handler) {
+        if (!patterns || patterns.length === 0) {
+            app.use(handler);
+            return;
+        }
+        app.use((req, res, next) => {
+            const url = req.originalUrl.split('?')[0];
+            if (!patterns.some(p => p.test(url))) return next();
+            handler(req, res, next);
+        });
     }
 }
 
@@ -43,11 +49,18 @@ class FastifyDriver extends DriverContrat {
             await logic(req, reply, () => {});
         };
     }
-
     
-    install(app, routes, handler) {
+    install(app, patterns, handler) {
+    if (!patterns || patterns.length === 0) {
         app.addHook('onRequest', handler);
+        return;
     }
+    app.addHook('onRequest', async (req, reply) => {
+        const url = req.url.split('?')[0];
+        if (!patterns.some(p => p.test(url))) return;
+        await handler(req, reply);
+    });
+}
 }
 
 const DRIVERS = Object.freeze({
