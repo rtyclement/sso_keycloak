@@ -31,9 +31,15 @@ class Keycloak {
             ? [null]
             : Array.isArray(routes) ? routes : [routes];
         const patterns = routesList.map(compilePattern)
+
+        const rolesList = roles === null || roles === undefined
+            ? []
+            : Array.isArray(roles) ? roles : [roles];
+
         this._rules.push({
             mode: mode,
-            patterns: patterns
+            patterns: patterns,
+            roles: rolesList
         })
     }
     getFramework(){
