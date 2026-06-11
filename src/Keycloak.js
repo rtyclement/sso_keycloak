@@ -1,3 +1,16 @@
+function compilePattern(pattern) {
+    if (pattern === null || pattern === undefined) return /.*/;
+
+    const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+
+    if (escaped.endsWith('/*')) {
+        const base = escaped.slice(0, -2);
+        return new RegExp(`^${base}(/.*)?$`);
+    }
+
+    return new RegExp(`^${escaped}$`);
+}
+
 class Keycloak {
     constructor({framework} = {}){
         if(!framework || !['express','fastify'].includes(framework)){
@@ -19,3 +32,4 @@ class Keycloak {
 }
 
 module.exports = Keycloak;
+module.exports.compilePattern = compilePattern;
