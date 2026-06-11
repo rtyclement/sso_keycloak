@@ -1,5 +1,5 @@
 function compilePattern(pattern) {
-    if (pattern === null || pattern === undefined) return /.*/;
+    if (pattern === null || pattern === undefined) return /\/.*/;
 
     const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
 
@@ -26,7 +26,10 @@ class Keycloak {
         if(!mode || !['session','bearer'].includes(mode)){
             throw new Error("[Keycloak] Erreur dans le mode de protection demandé. Mode supoorté : 'session' et 'bearer'");
         }
-        const routesList = Array.isArray(routes) ? routes : [routes]
+
+        const routesList = routes === null || routes === undefined
+            ? [null]
+            : Array.isArray(routes) ? routes : [routes];
         const patterns = routesList.map(compilePattern)
         this._rules.push({
             mode: mode,
