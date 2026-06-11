@@ -25,6 +25,7 @@ class Keycloak {
     #config;
     #rules = [];
     #ready;
+    #authRoutesMounted= false;
 
     constructor(driver, config) {
         if (!driver || !(driver instanceof DriverContrat))
@@ -59,12 +60,17 @@ class Keycloak {
             patterns: patterns,
             roles: rolesList
         })
+        if (mode === 'session' && !this.#authRoutesMounted) {
+            this.#authRoutesMounted = true;
+            this.#ready.then(sso => this.#driver.mountAuthRoutes(app, sso));
+        }
+
         const handler = this.#driver.wrap(async (req,reply,next)=>{
             const url   = (req.url ?? req.originalUrl ?? '/').split('?')[0];
             const match = matchRule(this.#rules, url);
             if (!match)           return next();
             if (req._ssoHandled)  return next();
-            const sso = await this.#ready; 
+            const sso = await this.#ready;
             const strategy = match.mode === 'bearer' ? sso.strategies.introspection : sso.strategies.authorizationCode;
             const decision = await strategy.authenticate({
                 session: this.#driver.getSession(req),

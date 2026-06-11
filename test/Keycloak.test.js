@@ -29,6 +29,7 @@ class TestDriver extends DriverContrat {
         install(app, patterns, handler) {
             installed.push({ app, patterns, handler });
         }
+        mountAuthRoutes(app, routes) { app.mounted = routes; }
 }
 
 
