@@ -11,14 +11,12 @@ class ExpressDriver extends DriverContrat {
     deny(res, s)               { res.status(s).end(); }
     ok(res)                    { res.status(200).end(); }
 
-    
     wrap(logic) {
         return (req, res, next) => {
             Promise.resolve(logic(req, res, next)).catch(next);
         };
     }
 
-    
     install(app, patterns, handler) {
         if (!patterns || patterns.length === 0) {
             app.use(handler);
@@ -43,7 +41,6 @@ class FastifyDriver extends DriverContrat {
     deny(reply, s)             { reply.code(s).send(); }
     ok(reply)                  { reply.code(200).send(); }
 
-    
     wrap(logic) {
         return async (req, reply) => {
             await logic(req, reply, () => {});
@@ -51,16 +48,16 @@ class FastifyDriver extends DriverContrat {
     }
     
     install(app, patterns, handler) {
-    if (!patterns || patterns.length === 0) {
-        app.addHook('onRequest', handler);
-        return;
+        if (!patterns || patterns.length === 0) {
+            app.addHook('onRequest', handler);
+            return;
+        }
+        app.addHook('onRequest', async (req, reply) => {
+            const url = req.url.split('?')[0];
+            if (!patterns.some(p => p.test(url))) return;
+            await handler(req, reply);
+        });
     }
-    app.addHook('onRequest', async (req, reply) => {
-        const url = req.url.split('?')[0];
-        if (!patterns.some(p => p.test(url))) return;
-        await handler(req, reply);
-    });
-}
 }
 
 const DRIVERS = Object.freeze({

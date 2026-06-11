@@ -3,6 +3,7 @@ const assert   = require('node:assert/strict');
 const Keycloak = require('../src/Keycloak');
 const DRIVERS  = require('../src/adapters/Drivers');
 const DriverContrat = require('../src/adapters/DriverContrat');
+const { buildFakeClient } = require('./Helper.test');
 const VALID_CONFIG = {
     issuerUrl:     'http://kc/realms/r',
     clientId:      'c',
@@ -31,23 +32,38 @@ test('Keycloak accepte tout driver instanceof DriverContrat', () => {
         wrap(l)        { return l; }
         install()      {}
     }
-    assert.doesNotThrow(() => new Keycloak(new MonDriver(), VALID_CONFIG));
+    assert.doesNotThrow(() => new Keycloak(new MonDriver(), {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        }));
 });
 
 test('Keycloak est instanciable avec un driver et une config', () => {
-    assert.doesNotThrow(() => new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG));
+    assert.doesNotThrow(() => new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        }));
 });
 
 test('Keycloak échoue si le driver est absent', () => {
-    assert.throws(() => new Keycloak(null, VALID_CONFIG), /driver/i);
+    assert.throws(() => new Keycloak(null, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        }), /driver/i);
 });
 
 test('Keycloak échoue si le driver n\'est pas un DRIVER reconnu', () => {
-    assert.throws(() => new Keycloak({ bidon: true }, VALID_CONFIG), /driver/i);
+    assert.throws(() => new Keycloak({ bidon: true }, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        }), /driver/i);
 });
 
 test('Keycloak accepte le driver FASTIFY', () => {
-    assert.doesNotThrow(() => new Keycloak(DRIVERS.FASTIFY, VALID_CONFIG));
+    assert.doesNotThrow(() => new Keycloak(DRIVERS.FASTIFY, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        }));
 });
 
 test('Keycloak échoue si config est absente', () => {
@@ -57,17 +73,26 @@ test('Keycloak échoue si config est absente', () => {
 
 
 test('protect échoue si app est absent', () => {
-    const kc = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     assert.throws(() => kc.protect(null, '/api', 'bearer'), /app/i);
 });
 
 test('protect échoue si mode est absent', () => {
-    const kc = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     assert.throws(() => kc.protect({}, '/api', null), /mode/i);
 });
 
 test('protect échoue si mode est diffent de session ou bearer', () => {
-    const kc = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     assert.throws(() => kc.protect({}, '/api', 'fizhfoiahf'), /mode/i);
     assert.throws(() => kc.protect({}, '/api', ''), /mode/i);
     assert.doesNotThrow(() => kc.protect({}, '/api', 'session'), /mode/i);
@@ -75,7 +100,10 @@ test('protect échoue si mode est diffent de session ou bearer', () => {
 });
 
 test('Le constructeur enregistre bien le drivers choisi', () => {
-    const kc = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     assert.equal(kc.getDriverType(),'EXPRESS');
 })
  
@@ -111,7 +139,10 @@ test('compilePattern : caractères spéciaux échappés', () => {
     assert.ok(!re.test('/apixv1'));
 });
 test('getRules retourne une copie — modifier le résultat ne pollue pas l\'état interne', () => {
-    const kc = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     kc.protect({}, '/api', 'bearer');
 
     kc.getRules().push({ mode: 'session', patterns: [] });
@@ -120,7 +151,10 @@ test('getRules retourne une copie — modifier le résultat ne pollue pas l\'ét
 }); 
 
 test('protect enregistre une règle avec les bons champs', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     const app = {};
 
     kc.protect(app, '/api', 'bearer');
@@ -131,7 +165,10 @@ test('protect enregistre une règle avec les bons champs', () => {
 });
 
 test('protect accepte un tableau de routes', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     const app = {};
 
     kc.protect(app, ['/api', '/data'], 'bearer');
@@ -141,7 +178,10 @@ test('protect accepte un tableau de routes', () => {
 });
 
 test('protect empile les règles sans écraser', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     kc.protect({}, '/swagger', 'session');
     kc.protect({}, null, 'bearer');
 
@@ -151,7 +191,10 @@ test('protect empile les règles sans écraser', () => {
 });
 
 test('protect accepte routes null', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     kc.protect({}, null, 'bearer');
     assert.equal(kc.getRule(0).patterns.length, 1);
     assert.ok(kc.getRule(0).patterns[0].test('/nimporte/quoi'));
@@ -160,21 +203,30 @@ test('protect accepte routes null', () => {
 });
 
 test('protect enregistre les roles', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     kc.protect({}, '/api', 'bearer', ['admin', 'reader']);
 
     assert.deepEqual(kc.getRule(0).roles, ['admin', 'reader']);
 });
 
 test('protect normalise un role string en tableau', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     kc.protect({}, '/api', 'bearer', 'admin');
 
     assert.deepEqual(kc.getRule(0).roles, ['admin']);
 });
 
 test('protect sans roles stocke un tableau vide', () => {
-    const kc  = new Keycloak(DRIVERS.EXPRESS, VALID_CONFIG);
+    const kc  = new Keycloak(DRIVERS.EXPRESS, {
+            ...VALID_CONFIG,
+            _client: buildFakeClient(),
+        });
     kc.protect({}, '/api', 'bearer');
 
     assert.deepEqual(kc.getRule(0).roles, []);

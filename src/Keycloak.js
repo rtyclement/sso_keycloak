@@ -24,6 +24,7 @@ class Keycloak {
     #driver;
     #config;
     #rules = [];
+    #ready;
 
     constructor(driver, config) {
         if (!driver || !(driver instanceof DriverContrat))
@@ -33,6 +34,7 @@ class Keycloak {
 
         this.#driver = driver;
         this.#config = config;
+        this.#ready = require('./core').createSso(config)
     }
 
     protect(app,routes,mode,roles){
@@ -72,6 +74,9 @@ class Keycloak {
     }
     getRules(){
         return [...this.#rules];
+    }
+    ready(){
+        return this.#ready;
     }
 }
 
