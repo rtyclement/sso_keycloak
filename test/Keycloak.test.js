@@ -82,3 +82,19 @@ test('compilePattern : caractères spéciaux échappés', () => {
     assert.ok(re.test('/api/v1'));
     assert.ok(!re.test('/apixv1'));
 });
+
+test('Test getRules et getRule(index) retourne le tableau des regles à appliquer', () => {
+    const kc = new Keycloak({framework: 'express'});
+    kc.protect({},'/api','/flop','bearer');
+    const rule=kc.getRule(0);
+    assert.equal(rule.pattern[0],'/api');
+    assert.equal(rule.pattern[1],'/flop');
+    assert.equal(rule.mode,'bearer');
+    assert.equal(kc.getRules().length,1);
+
+    kc.protect({},'/user/*','session');
+    const rule2=kc.getRule(1);
+    assert.equal(rule2.pattern[0],'/user/*');
+    assert.equal(rule2.mode,'session');
+    assert.equal(kc.getRules().length,2);
+});
