@@ -21,3 +21,13 @@ test('Keycloak accepte express', () => {
 test('Keycloak accepte fastify', () => {
     assert.doesNotThrow(() => new Keycloak({ framework: 'fastify' }));
 });
+
+test('Keycloak expose une méthode protect', () => {
+    const kc = new Keycloak({ framework: 'express' });
+    assert.equal(typeof kc.protect, 'function');
+});
+
+test('protect échoue si app est absent', () => {
+    const kc = new Keycloak({ framework: 'express' });
+    assert.throws(() => kc.protect(null, '/api', 'bearer'), /app/i);
+});
