@@ -11,6 +11,13 @@ function compilePattern(pattern) {
     return new RegExp(`^${escaped}$`);
 }
 
+function matchRule(rules, url) {
+    for (const rule of rules) {
+        if (rule.patterns.some(p => p.test(url))) return rule;
+    }
+    return null;
+}
+
 class Keycloak {
     #framework;
     #rules = [];
@@ -57,3 +64,4 @@ class Keycloak {
 
 module.exports = Keycloak;
 module.exports.compilePattern = compilePattern;
+module.exports.matchRule      = matchRule;
