@@ -59,3 +59,82 @@ test('protect appelle driver.install avec les patterns et un handler', () => {
     assert.ok(installed[0].patterns[0] instanceof RegExp);
     assert.equal(typeof installed[0].handler, 'function');
 });
+
+test('le handler passe si aucune règle ne matche l\'URL', async () => {
+    class TestDriver extends DriverContrat {
+        getSession()   { return {}; }
+        getHeaders()   { return {}; }
+        getBody()      { return {}; }
+        getUrl()       { return new URL('http://x/'); }
+        getSessionId() { return 'id'; }
+        setPrincipal() {}
+        redirect()     {}
+        deny()         {}
+        ok()           {}
+        wrap(l)        { return l; }
+        install(app, patterns, handler) { app.handler = handler; }
+    }
+
+    const kc  = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
+    const app = {};
+
+    kc.protect(app, '/api', 'bearer');
+
+    const next = { called: false };
+    await app.handler({ url: '/autre', headers: {} }, {}, () => { next.called = true; });
+
+    assert.ok(next.called);
+});
+
+test('le handler marque _ssoHandled après avoir traité la requête', async () => {
+    class TestDriver extends DriverContrat {
+        getSession()   { return {}; }
+        getHeaders()   { return {}; }
+        getBody()      { return {}; }
+        getUrl()       { return new URL('http://x/'); }
+        getSessionId() { return 'id'; }
+        setPrincipal() {}
+        redirect()     {}
+        deny()         {}
+        ok()           {}
+        wrap(l)        { return l; }
+        install(app, patterns, handler) { app.handler = handler; }
+    }
+
+    const kc  = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
+    const app = {};
+
+    kc.protect(app, '/api', 'bearer');
+
+    const req = { url: '/api', headers: {} };
+    await app.handler(req, {}, () => {});
+
+    assert.ok(req._ssoHandled);
+});
+
+test('le handler skip si _ssoHandled est déjà true', async () => {
+    let authCalls = 0;
+    class TestDriver extends DriverContrat {
+        getSession()   { return {}; }
+        getHeaders()   { return {}; }
+        getBody()      { return {}; }
+        getUrl()       { return new URL('http://x/'); }
+        getSessionId() { return 'id'; }
+        setPrincipal() {}
+        redirect()     {}
+        deny()         {}
+        ok()           {}
+        wrap(l)        { return (...args) => { authCalls++; return l(...args); }; }
+        install(app, patterns, handler) { app.handler = handler; }
+    }
+
+    const kc  = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
+    const app = {};
+
+    kc.protect(app, '/api', 'bearer');
+
+    const req = { url: '/api', headers: {}, _ssoHandled: true };
+    await app.handler(req, {}, () => {});
+
+    assert.equal(authCalls, 0);
+});
