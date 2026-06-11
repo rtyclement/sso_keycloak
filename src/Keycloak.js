@@ -65,7 +65,15 @@ class Keycloak {
             if (!match)           return next();
             if (req._ssoHandled)  return next();
             const sso = await this.#ready; 
+            const strategy = match.mode === 'bearer' ? sso.strategies.introspection : sso.strategies.authorizationCode;
+            const decision = await strategy.authenticate({
+                session: this.#driver.getSession(req),
+                headers: this.#driver.getHeaders(req),
+            });
             req._ssoHandled = true;
+            if (decision.type === 'allow')    { this.#driver.setPrincipal(req, decision.principal); return next(); }
+            if (decision.type === 'redirect') return this.#driver.redirect(reply, decision.url);
+            if (decision.type === 'deny')     return this.#driver.deny(reply, decision.status);
             return next();
         })
 
