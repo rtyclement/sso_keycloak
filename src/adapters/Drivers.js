@@ -127,6 +127,19 @@ class FastifyDriver extends DriverContrat {
             destroy: (id, cb) => { data.delete(id); cb(null); },
         };
     }
+    async mountSession(app, { sessionSecret, store, allowHttp },plugins = {}) {
+        const cookie = plugins.cookie ?? require('@fastify/cookie');
+        const session  = plugins.session  ?? require('@fastify/session');
+        const formbody = plugins.formbody ?? require('@fastify/formbody');
+        await app.register(cookie);
+        await app.register(session, {
+            secret:            sessionSecret,
+            saveUninitialized: false,
+            store,
+            cookie: { secure: !allowHttp, httpOnly: true, sameSite: 'lax' },
+        });
+        await app.register(formbody);
+    }
 }
 
 const DRIVERS = Object.freeze({
