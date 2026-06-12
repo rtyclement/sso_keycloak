@@ -30,6 +30,8 @@ class TestDriver extends DriverContrat {
             installed.push({ app, patterns, handler });
         }
         mountAuthRoutes(app, routes) { app.mounted = routes; }
+        createStore(){}
+        mountSession(){}
 }
 
 
@@ -50,6 +52,9 @@ test('Keycloak accepte tout driver instanceof DriverContrat', () => {
         ok()           {}
         wrap(l)        { return l; }
         install()      {}
+        mountAuthRoutes(){}
+        createStore(){}
+        mountSession(){}
     }
     assert.doesNotThrow(() => new Keycloak(new MonDriver(), {
             ...VALID_CONFIG,

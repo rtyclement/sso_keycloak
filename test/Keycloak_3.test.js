@@ -27,6 +27,8 @@ test('protect en mode session monte les routes d\'auth au premier appel', async 
         wrap(l)                    { return l; }
         install(app, p, h)         { routesInstalled.push({ p, h }); }
         mountAuthRoutes(app, sso)  { app.mounted = sso; }
+        createStore(){}
+        mountSession(){}
     }
 
     const kc  = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
@@ -54,6 +56,8 @@ test('mountAuthRoutes n\'est appelé qu\'une seule fois même avec plusieurs pro
         wrap(l)                   { return l; }
         install(app, p, h)        {}
         mountAuthRoutes(app, sso) { mountCount++; }
+        createStore(){}
+        mountSession(){}
     }
 
     const kc = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
@@ -65,4 +69,28 @@ test('mountAuthRoutes n\'est appelé qu\'une seule fois même avec plusieurs pro
     await kc.ready();
 
     assert.equal(mountCount, 1);
+});
+
+test('Keycloak appelle driver.createStore au constructeur', () => {
+    let createStoreCalled = false;
+    class TestDriver extends DriverContrat {
+        getSession()              { return {}; }
+        getHeaders()              { return {}; }
+        getBody()                 { return {}; }
+        getUrl()                  { return new URL('http://x/'); }
+        getSessionId()            { return 'id'; }
+        setPrincipal()            {}
+        redirect()                {}
+        deny()                    {}
+        ok()                      {}
+        wrap(l)                   { return l; }
+        install()                 {}
+        mountAuthRoutes()         {}
+        mountSession()            {}
+        createStore()             { createStoreCalled = true; return {}; }
+    }
+
+    new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
+
+    assert.ok(createStoreCalled);
 });

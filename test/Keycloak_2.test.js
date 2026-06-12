@@ -47,6 +47,8 @@ test('protect appelle driver.install avec les patterns et un handler', () => {
             installed.push({ app, patterns, handler });
         }
         mountAuthRoutes(app, routes) { app.mounted = routes; }
+        createStore(){}
+        mountSession(){}
     }
 
     const kc  = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
@@ -75,6 +77,8 @@ test('le handler passe si aucune règle ne matche l\'URL', async () => {
         wrap(l)        { return l; }
         install(app, patterns, handler) { app.handler = handler; }
         mountAuthRoutes(app, routes) { app.mounted = routes; }
+        createStore(){}
+        mountSession(){}
     }
 
     const kc  = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
@@ -102,6 +106,8 @@ test('le handler marque _ssoHandled après avoir traité la requête', async () 
         wrap(l)        { return l; }
         install(app, patterns, handler) { app.handler = handler; }
         mountAuthRoutes(app, routes) { app.mounted = routes; }
+        createStore(){}
+        mountSession(){}
     }
 
     const kc  = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
@@ -130,6 +136,8 @@ test('le handler skip si _ssoHandled est déjà true', async () => {
         wrap(l)        { return l; }
         install(app, patterns, handler) { installed = handler; }
         mountAuthRoutes(app, routes) { app.mounted = routes; }
+        createStore(){}
+        mountSession(){}
     }
 
     const kc = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
@@ -159,6 +167,8 @@ test('le handler attend que la discovery soit prête', async () => {
         wrap(l)        { return l; }
         install(app, patterns, handler) { installed = handler; }
         mountAuthRoutes(app, routes) { app.mounted = routes; }
+        createStore(){}
+        mountSession(){}
     }
 
     const kc = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
@@ -188,6 +198,8 @@ test('le handler appelle strategy.authenticate pour le mode bearer', async () =>
         wrap(l)        { return l; }
         install(app, patterns, handler) { installed = handler; }
         mountAuthRoutes(app, routes) { app.mounted = routes; }
+        createStore(){}
+        mountSession(){}
     }
 
 
@@ -230,6 +242,8 @@ function makeTestDriver(onInstall) {
         wrap(l)              { return l; }
         install(app, p, h)   { onInstall(h); }
         mountAuthRoutes(app, routes) { app.mounted = routes; }
+        createStore(){}
+        mountSession(){}
     }
     return { driver: new TestDriver(), calls };
 }
