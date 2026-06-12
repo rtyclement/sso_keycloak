@@ -217,3 +217,24 @@ test('ExpressDriver.createStore — le reaper garde les sessions non expirées',
         }, 150);
     });
 });
+
+test('FastifyDriver.createStore retourne un store avec get, set, destroy et reaper (meme logique que pour Express donc 1 seul test', (t, done) => {
+    const store = DRIVERS.FASTIFY.createStore({ reapIntervalMs: 50 });
+
+    assert.equal(typeof store.get,     'function');
+    assert.equal(typeof store.set,     'function');
+    assert.equal(typeof store.destroy, 'function');
+
+    const expiredSession = {
+        cookie: { expires: new Date(Date.now() - 1000) },
+    };
+
+    store.set('sid-expired', expiredSession, () => {
+        setTimeout(() => {
+            store.get('sid-expired', (err, session) => {
+                assert.equal(session, null);
+                done();
+            });
+        }, 150);
+    });
+});
