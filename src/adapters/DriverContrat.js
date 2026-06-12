@@ -13,6 +13,7 @@
  * @property {(app: any, patterns: RegExp[], handler: Function) => void} install  Installe le handler sur l'app
  * @property {(app: any, sso: Function) => void}     mountAuthRoutes  créer les routes HTTP pour le mode session de protect
  * @property {()=> Object}                           createStore   Crée un memory store avec TTL pour éviter les fuites mémoires
+ * @property {(app: any, {sessionSecret: String, store: any, allowHttp:  boolean}: Object) => void} mountSession Vient monter la session store sur le middleware de session de l'application
 */
 
 /**
@@ -35,6 +36,7 @@ class DriverContrat {
     install(app, patterns, handler) { throw new Error("[Driver] install() not implemented"); }
     mountAuthRoutes(app, sso) { throw new Error("[Driver] mountAuthRoutes() not implemented"); }
     createStore(){ throw new Error("[Driver] createStore() not implemented"); }
+    mountSession(app, {sessionSecret, store, allowHttp} ) { throw new Error("[Driver] mountSession() not implemented"); }
 }
 
 module.exports = DriverContrat;

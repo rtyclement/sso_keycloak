@@ -274,3 +274,38 @@ test('mountSession avec allowHttp:false configure cookie.secure à true', () => 
 
     assert.equal(capturedOptions.cookie.secure, true);
 });
+
+test('FastifyDriver.mountSession enregistre cookie, session et formbody', async () => {
+    const registered = [];
+    const app = { register: async (plugin, opts) => registered.push({ plugin, opts }) };
+    const store = DRIVERS.FASTIFY.createStore();
+
+    await DRIVERS.FASTIFY.mountSession(app, {
+        sessionSecret: 'secret',
+        store,
+        allowHttp: true,
+    });
+
+    assert.equal(registered.length, 3);
+});
+
+test('FastifyDriver.mountSession avec allowHttp:true configure cookie.secure à false', async () => {
+    let sessionOpts = null;
+    const app = {
+        register: async (plugin, opts) => {
+            if (opts?.secret) sessionOpts = opts;  // c'est la config session
+        }
+    };
+    const store = DRIVERS.FASTIFY.createStore();
+    const fakeCookie  = async () => {};
+    const fakeSession = async () => {};
+    const fakeFormbody = async () => {};
+
+    await DRIVERS.FASTIFY.mountSession(
+        app,
+        { sessionSecret: 'secret', store, allowHttp: true },
+        { cookie: fakeCookie, session: fakeSession, formbody: fakeFormbody }
+    );
+
+    assert.equal(sessionOpts.cookie.secure, false);
+});
