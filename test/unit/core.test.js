@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
-const { createSso } = require('../src/core');
+const { createSso } = require('../../src/core');
 const {
     FAKE_METADATA,
     buildSsoConfig,

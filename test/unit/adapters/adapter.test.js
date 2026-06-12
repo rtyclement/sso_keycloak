@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
-const Adapter  = require('../../src/adapters/Adapter');
+const Adapter  = require('../../../src/adapters/Adapter');
 const { makeFakeDriver } = require('../support/fakeDriver');
 const { buildReq }       = require('../support/builders');
 

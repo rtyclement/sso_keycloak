@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
-const DriverContrat      = require('../../src/adapters/DriverContrat');
+const DriverContrat      = require('../../../src/adapters/DriverContrat');
 const { makeFakeDriver } = require('../support/fakeDriver');
 
 test('Driver est une classe', () => {

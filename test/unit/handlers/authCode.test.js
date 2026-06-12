@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
-const createAuthorizationCode = require('../../src/handlers/authCode');
+const createAuthorizationCode = require('../../../src/handlers/authCode');
 const { buildFakeAuthClient, makeJwt } = require('../support/builders');
 
 /** Stratégie authCode avec dépendances par défaut, surchargeables par test. */

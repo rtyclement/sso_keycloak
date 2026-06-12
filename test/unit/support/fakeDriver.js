@@ -1,4 +1,4 @@
-const DriverContrat = require('../../src/adapters/DriverContrat');
+const DriverContrat = require('../../../src/adapters/DriverContrat');
 
 /**
  * Driver de test unique pour toute la suite.

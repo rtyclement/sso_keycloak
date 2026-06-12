@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
-const Keycloak = require('../src/Keycloak');
-const DRIVERS  = require('../src/adapters/Drivers');
+const Keycloak = require('../../src/Keycloak');
+const DRIVERS  = require('../../src/adapters/Drivers');
 const { makeFakeDriver }      = require('./support/fakeDriver');
 const { buildKeycloakConfig } = require('./support/builders');
 

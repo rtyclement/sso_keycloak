@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
-const createIntrospection = require('../../src/handlers/introspection');
+const createIntrospection = require('../../../src/handlers/introspection');
 
 /**
  * Stratégie introspection avec dépendances par défaut, surchargeables par test.

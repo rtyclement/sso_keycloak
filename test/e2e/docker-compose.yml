@@ -1,0 +1,29 @@
+# Serveur Keycloak local pour les tests e2e de sso_keycloak.
+# Le realm "test-realm" (client confidentiel + user + rôles) est importé au
+# démarrage depuis ./keycloak/realm-export.json — aucun clic manuel requis.
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    container_name: kc_e2e
+    command:
+      - start-dev
+      - --http-relative-path=/auth
+      - --features=scripts
+      - --import-realm
+    ports:
+      - "8080:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: "${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}"
+      KC_BOOTSTRAP_ADMIN_PASSWORD: "${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin}"
+      KC_HTTP_ENABLED: "true"
+      JAVA_OPTS: "-Djava.net.preferIPv4Stack=true"
+    volumes:
+      # Réimport à chaque `up` : réinitialise le realm proprement entre les runs.
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    healthcheck:
+      # 26.x : endpoint santé sur le port management 9000, sous le relative-path.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s

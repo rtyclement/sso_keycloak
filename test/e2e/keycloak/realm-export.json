@@ -1,0 +1,74 @@
+{
+  "realm": "test-realm",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "accessTokenLifespan": 300,
+  "roles": {
+    "client": {
+      "test-client": [
+        { "name": "dashboard-access", "description": "Accès au dashboard (mode session)" },
+        { "name": "api-access", "description": "Accès à l'API (mode bearer)" },
+        { "name": "no-access", "description": "Rôle sans aucun accès (test du 403)" }
+      ]
+    }
+  },
+  "clients": [
+    {
+      "clientId": "test-client",
+      "name": "Test client (sso_keycloak e2e)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "test-client-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "redirectUris": [
+        "http://localhost:9090/*",
+        "http://127.0.0.1:9090/*"
+      ],
+      "webOrigins": [
+        "http://localhost:9090",
+        "+"
+      ],
+      "attributes": {
+        "backchannel.logout.session.required": "true",
+        "post.logout.redirect.uris": "+"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "testuser@example.com",
+      "firstName": "Test",
+      "lastName": "User",
+      "credentials": [
+        { "type": "password", "value": "testpassword", "temporary": false }
+      ],
+      "clientRoles": {
+        "test-client": ["dashboard-access", "api-access"]
+      }
+    },
+    {
+      "username": "testuser2",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "testuser2@example.com",
+      "firstName": "NoAccess",
+      "lastName": "User",
+      "credentials": [
+        { "type": "password", "value": "testpassword2", "temporary": false }
+      ],
+      "clientRoles": {
+        "test-client": ["no-access"]
+      }
+    }
+  ]
+}

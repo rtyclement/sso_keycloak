@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
-const DRIVERS  = require('../../src/adapters/Drivers');
-const DriverContrat = require('../../src/adapters/DriverContrat');
+const DRIVERS  = require('../../../src/adapters/Drivers');
+const DriverContrat = require('../../../src/adapters/DriverContrat');
 
 /** Objet sso minimal attendu par mountAuthRoutes. */
 function buildFakeSso() {

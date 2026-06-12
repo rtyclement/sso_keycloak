@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
-const { compilePattern, matchRule } = require('../src/Keycloak');
+const { compilePattern, matchRule } = require('../../src/Keycloak');
 
 /**
  * Fonctions pures de routage — aucun driver, aucune config :
