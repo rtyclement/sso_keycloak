@@ -28,12 +28,16 @@ class ExpressDriver extends DriverContrat {
             handler(req, res, next);
         });
     }
-    mountAuthRoutes(app, sso) {
+    mountAuthRoutes(app, ready) {
         const adapter = new (require('./Adapter'))(this);
+        const lazy = (pick) => this.wrap(async (req, res, next) => {
+            const sso = await ready;
+            return pick(adapter, sso)(req, res, next);
+        });
 
-        app.get ('/login',              adapter.loginRoute(sso.strategies.authorizationCode));
-        app.get ('/callback',           adapter.callbackRoute(sso.strategies.authorizationCode, sso.backchannel));
-        app.post('/backchannel-logout', adapter.backchannelRoute(sso.backchannel));
+        app.get ('/login',              lazy((a, s) => a.loginRoute(s.strategies.authorizationCode)));
+        app.get ('/callback',           lazy((a, s) => a.callbackRoute(s.strategies.authorizationCode, s.backchannel)));
+        app.post('/backchannel-logout', lazy((a, s) => a.backchannelRoute(s.backchannel)));
     }
 
     createStore({ reapIntervalMs = 10 * 60 * 1000 } = {}) {
@@ -75,7 +79,9 @@ class FastifyDriver extends DriverContrat {
     getSession(req)            { return req.session; }
     getHeaders(req)            { return req.headers; }
     getBody(req)               { return req.body; }
-    getUrl(req)                { return new URL(req.url, `${req.protocol}://${req.hostname ?? 'localhost'}`); }
+    // req.host inclut le port (Fastify v5) ; req.hostname le retire, ce qui
+    // casserait le redirect_uri de l'échange OAuth (port manquant).
+    getUrl(req)                { return new URL(req.url, `${req.protocol}://${req.host ?? req.hostname ?? 'localhost'}`); }
     getSessionId(req)          { return req.session.sessionId; }
     setPrincipal(req, p)       { req.principal = p; }
     redirect(reply, url)       { reply.redirect(url); }
@@ -99,12 +105,16 @@ class FastifyDriver extends DriverContrat {
             await handler(req, reply);
         });
     }
-    mountAuthRoutes(app, sso) {
+    mountAuthRoutes(app, ready) {
         const adapter = new (require('./Adapter'))(this);
+        const lazy = (pick) => this.wrap(async (req, reply, next) => {
+            const sso = await ready;
+            return pick(adapter, sso)(req, reply, next);
+        });
 
-        app.get ('/login',              adapter.loginRoute(sso.strategies.authorizationCode));
-        app.get ('/callback',           adapter.callbackRoute(sso.strategies.authorizationCode, sso.backchannel));
-        app.post('/backchannel-logout', adapter.backchannelRoute(sso.backchannel));
+        app.get ('/login',              lazy((a, s) => a.loginRoute(s.strategies.authorizationCode)));
+        app.get ('/callback',           lazy((a, s) => a.callbackRoute(s.strategies.authorizationCode, s.backchannel)));
+        app.post('/backchannel-logout', lazy((a, s) => a.backchannelRoute(s.backchannel)));
     }
     createStore({ reapIntervalMs = 10 * 60 * 1000 } = {}) {
         const data = new Map();
@@ -127,18 +137,21 @@ class FastifyDriver extends DriverContrat {
             destroy: (id, cb) => { data.delete(id); cb(null); },
         };
     }
-    async mountSession(app, { sessionSecret, store, allowHttp },plugins = {}) {
+    mountSession(app, { sessionSecret, store, allowHttp },plugins = {}) {
         const cookie = plugins.cookie ?? require('@fastify/cookie');
         const session  = plugins.session  ?? require('@fastify/session');
         const formbody = plugins.formbody ?? require('@fastify/formbody');
-        await app.register(cookie);
-        await app.register(session, {
+        // Enregistrement synchrone (sans await) : les 3 plugins sont mis en file
+        // AVANT que protect() ne rende la main, donc avant listen(). avvio les
+        // démarre dans l'ordre d'enregistrement (cookie avant session).
+        app.register(cookie);
+        app.register(session, {
             secret:            sessionSecret,
             saveUninitialized: false,
             store,
             cookie: { secure: !allowHttp, httpOnly: true, sameSite: 'lax' },
         });
-        await app.register(formbody);
+        app.register(formbody);
     }
 }
 

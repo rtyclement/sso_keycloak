@@ -20,6 +20,10 @@ function matchRule(rules, url) {
 const DriverContrat = require('./adapters/DriverContrat');
 const DRIVERS = require('./adapters/Drivers');
 
+// Routes d'auth montées par le mode session : elles ont leurs propres handlers
+// et ne doivent jamais être interceptées par le guard.
+const AUTH_PATHS = new Set(['/login', '/callback', '/backchannel-logout']);
+
 class Keycloak {
     #driver;
     #config;
@@ -62,20 +66,27 @@ class Keycloak {
             patterns: patterns,
             roles: rolesList
         })
+        // Mode session : on monte la session ET les routes d'auth de façon
+        // SYNCHRONE, avant d'installer le guard.
+        //  - le middleware de session doit précéder le guard, sinon req.session
+        //    est undefined au moment du contrôle d'authentification ;
+        //  - sous Fastify, plugins et routes ne peuvent plus être enregistrés
+        //    après listen(). Les routes d'auth reçoivent la promesse #ready et
+        //    résolvent les stratégies à la requête (la discovery peut être en
+        //    cours au moment du montage).
         if (mode === 'session' && !this.#authRoutesMounted) {
             this.#authRoutesMounted = true;
-            this.#ready.then(sso => {
-                this.#driver.mountSession(app, {
-                    sessionSecret: this.#config.sessionSecret,
-                    store:         this.#store,
-                    allowHttp:     this.#config.allowHttp ?? false,
-                });
-                this.#driver.mountAuthRoutes(app, sso);
+            this.#driver.mountSession(app, {
+                sessionSecret: this.#config.sessionSecret,
+                store:         this.#store,
+                allowHttp:     this.#config.allowHttp ?? false,
             });
+            this.#driver.mountAuthRoutes(app, this.#ready);
         }
 
         const handler = this.#driver.wrap(async (req,reply,next)=>{
             const url   = (req.url ?? req.originalUrl ?? '/').split('?')[0];
+            if (AUTH_PATHS.has(url)) return next();
             const match = matchRule(this.#rules, url);
             if (!match)           return next();
             if (req._ssoHandled)  return next();
