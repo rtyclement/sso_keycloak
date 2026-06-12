@@ -1,12 +1,16 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
 const Adapter  = require('../../src/adapters/Adapter');
-const {makeFakeDriver, buildReq} = require('../Helper.test');
+const { makeFakeDriver } = require('../support/fakeDriver');
+const { buildReq }       = require('../support/builders');
 
+function buildAdapter(overrides) {
+    const fake = makeFakeDriver(overrides);
+    return { adapter: new Adapter(fake.driver), ...fake };
+}
 
 test('Adapter expose guard, loginRoute, callbackRoute et backchannelRoute', () => {
-    const { driver } = makeFakeDriver();
-    const adapter    = new Adapter(driver);
+    const { adapter } = buildAdapter();
 
     assert.strictEqual(typeof adapter.guard,            'function');
     assert.strictEqual(typeof adapter.loginRoute,       'function');
@@ -26,96 +30,91 @@ test('Adapter.DRIVERS expose EXPRESS et FASTIFY avec les bonnes clés', () => {
     }
 });
 
+// ---- guard --------------------------------------------------------------
+
 test('guard appelle continue et attache le principal sur allow', async () => {
-    const { driver, calls } = makeFakeDriver();
-    const adapter = new Adapter(driver);
-
+    const { adapter, calls } = buildAdapter();
     const strategy = { authenticate: async () => ({ type: 'allow', principal: { id: 42 } }) };
-    const handler  = adapter.guard(strategy);
 
-    await handler({ session: {}, headers: {} }, {});
+    await adapter.guard(strategy)(buildReq(), {});
 
     assert.deepEqual(calls.principal, { id: 42 });
     assert.equal(calls.continued, true);
 });
 
 test('guard redirige sur redirect', async () => {
-    const { driver, calls } = makeFakeDriver();
-    const adapter  = new Adapter(driver);
+    const { adapter, calls } = buildAdapter();
     const strategy = { authenticate: async () => ({ type: 'redirect', url: '/login' }) };
 
-    await adapter.guard(strategy)({ session: {}, headers: {} }, {});
+    await adapter.guard(strategy)(buildReq(), {});
 
     assert.equal(calls.redirect, '/login');
     assert.equal(calls.continued, false);
 });
 
 test('guard appelle deny avec le bon status sur deny', async () => {
-    const { driver, calls } = makeFakeDriver();
-    const adapter  = new Adapter(driver);
+    const { adapter, calls } = buildAdapter();
     const strategy = { authenticate: async () => ({ type: 'deny', status: 403 }) };
 
-    await adapter.guard(strategy)({ session: {}, headers: {} }, {});
+    await adapter.guard(strategy)(buildReq(), {});
 
     assert.equal(calls.deny, 403);
 });
 
+// ---- loginRoute / callbackRoute -------------------------------------------
+
 test('loginRoute redirige vers l\'url retournée par startLogin', async () => {
-    const fakeStrategy    = { startLogin: async () => ({ type: 'redirect', url: 'https://kc.example.com/authorize' }) };
-    const { driver, log } = makeFakeDriver();
-    const adapter         = new Adapter(driver);
+    const { adapter, calls } = buildAdapter();
+    const strategy = { startLogin: async () => ({ type: 'redirect', url: 'https://kc.example.com/authorize' }) };
 
-    await adapter.loginRoute(fakeStrategy)(buildReq(), {});
+    await adapter.loginRoute(strategy)(buildReq(), {});
 
-    assert.strictEqual(log.redirect, 'https://kc.example.com/authorize');
+    assert.strictEqual(calls.redirect, 'https://kc.example.com/authorize');
 });
 
 test('callbackRoute redirige vers redirectTo après le callback', async () => {
-    const fakeStrategy    = { handleCallback: async () => ({ type: 'session', redirectTo: '/' }) };
-    const fakeBackchannel = { trackSession: () => {} };
-    const { driver, log } = makeFakeDriver();
-    const adapter         = new Adapter(driver);
+    const { adapter, calls } = buildAdapter();
+    const strategy    = { handleCallback: async () => ({ type: 'session', redirectTo: '/' }) };
+    const backchannel = { trackSession: () => {} };
 
     const req = buildReq({ session: { user: { sid: 'kc-sid' } } });
-    await adapter.callbackRoute(fakeStrategy, fakeBackchannel)(req, {});
+    await adapter.callbackRoute(strategy, backchannel)(req, {});
 
-    assert.strictEqual(log.redirect, '/');
+    assert.strictEqual(calls.redirect, '/');
 });
 
 test('callbackRoute appelle trackSession avec le sid et le sessionId', async () => {
-    const fakeStrategy = { handleCallback: async () => ({ type: 'session', redirectTo: '/' }) };
-    let capturedArgs   = null;
-    const fakeBackchannel = { trackSession: (sid, sessionId) => { capturedArgs = { sid, sessionId }; } };
-    const { driver }   = makeFakeDriver();
-    const adapter      = new Adapter(driver);
+    const { adapter } = buildAdapter();
+    const strategy    = { handleCallback: async () => ({ type: 'session', redirectTo: '/' }) };
+    let capturedArgs  = null;
+    const backchannel = { trackSession: (sid, sessionId) => { capturedArgs = { sid, sessionId }; } };
 
     const req = buildReq({
         session:   { user: { sid: 'kc-sid-abc' } },
         sessionId: 'express-sess-xyz',
     });
-    await adapter.callbackRoute(fakeStrategy, fakeBackchannel)(req, {});
+    await adapter.callbackRoute(strategy, backchannel)(req, {});
 
     assert.strictEqual(capturedArgs.sid,       'kc-sid-abc');
     assert.strictEqual(capturedArgs.sessionId, 'express-sess-xyz');
 });
 
-test('backchannelRoute répond avec le status retourné par handle', async () => {
-    const fakeBackchannel = { handle: async () => ({ status: 200 }) };
-    const { driver, log } = makeFakeDriver();
-    const adapter         = new Adapter(driver);
+// ---- backchannelRoute -------------------------------------------------------
 
-    const req = buildReq({ body: { logout_token: 'token' } });
-    await adapter.backchannelRoute(fakeBackchannel)(req, {});
+test('backchannelRoute répond 200 quand handle retourne 200', async () => {
+    const { adapter, calls } = buildAdapter();
+    const backchannel = { handle: async () => ({ status: 200 }) };
 
-    assert.strictEqual(log.status, 200);
+    await adapter.backchannelRoute(backchannel)(buildReq({ body: { logout_token: 'token' } }), {});
+
+    assert.strictEqual(calls.status, 200);
 });
 
 test('backchannelRoute appelle deny quand handle retourne 400', async () => {
-    const fakeBackchannel = { handle: async () => ({ status: 400 }) };
-    const { driver, log } = makeFakeDriver();
-    const adapter         = new Adapter(driver);
+    const { adapter, calls } = buildAdapter();
+    const backchannel = { handle: async () => ({ status: 400 }) };
 
-    await adapter.backchannelRoute(fakeBackchannel)(buildReq(), {});
+    await adapter.backchannelRoute(backchannel)(buildReq(), {});
 
-    assert.strictEqual(log.status, 400);
+    assert.strictEqual(calls.status, 400);
 });

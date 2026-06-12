@@ -1,7 +1,36 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
 const DRIVERS  = require('../../src/adapters/Drivers');
-const DriverContrat   = require('../../src/adapters/DriverContrat');
+const DriverContrat = require('../../src/adapters/DriverContrat');
+
+/** Objet sso minimal attendu par mountAuthRoutes. */
+function buildFakeSso() {
+    return {
+        strategies: {
+            authorizationCode: {
+                startLogin:     async () => ({ type: 'redirect', url: '/kc' }),
+                handleCallback: async () => ({ type: 'session',  redirectTo: '/' }),
+            },
+        },
+        backchannel: {
+            handle:       async () => ({ status: 200 }),
+            trackSession: () => {},
+        },
+    };
+}
+
+/** App fake qui enregistre les routes GET/POST déclarées. */
+function buildRouteRecorder(extra = {}) {
+    const routes = [];
+    const app = {
+        get:  (path) => routes.push({ method: 'GET',  path }),
+        post: (path) => routes.push({ method: 'POST', path }),
+        ...extra,
+    };
+    return { app, routes };
+}
+
+// ---- Contrat -----------------------------------------------------------------
 
 test('EXPRESS et FASTIFY sont des instances de DriverContrat', () => {
     assert.ok(DRIVERS.EXPRESS instanceof DriverContrat);
@@ -22,12 +51,13 @@ test('FASTIFY implémente tout le contrat sans throw', () => {
     assert.equal(typeof d.install, 'function');
 });
 
+// ---- install ------------------------------------------------------------------
+
 test('EXPRESS.install monte un middleware via app.use avec patterns', () => {
     const calls = [];
     const app   = { use: (...a) => calls.push(a) };
-    const handler = () => {};
 
-    DRIVERS.EXPRESS.install(app, [/^\/api$/], handler);
+    DRIVERS.EXPRESS.install(app, [/^\/api$/], () => {});
 
     assert.equal(calls.length, 1);
     // c'est un wrapper middleware (function), pas handler directement
@@ -35,8 +65,8 @@ test('EXPRESS.install monte un middleware via app.use avec patterns', () => {
 });
 
 test('EXPRESS.install sans patterns monte le handler directement', () => {
-    const calls = [];
-    const app   = { use: (...a) => calls.push(a) };
+    const calls   = [];
+    const app     = { use: (...a) => calls.push(a) };
     const handler = () => {};
 
     DRIVERS.EXPRESS.install(app, null, handler);
@@ -48,12 +78,11 @@ test('EXPRESS.install filtre les routes', async () => {
     const calls = [];
     const app   = { use: (fn) => calls.push(fn) };
     const hits  = [];
-    const handler = (req, res, next) => hits.push(req.originalUrl);
+    const handler = (req) => hits.push(req.originalUrl);
 
     DRIVERS.EXPRESS.install(app, [/^\/api$/], handler);
 
-    const mw   = calls[0];
-    const next = { called: false };
+    const mw = calls[0];
 
     // matche
     await mw({ originalUrl: '/api' }, {}, () => {});
@@ -67,9 +96,8 @@ test('EXPRESS.install filtre les routes', async () => {
 test('FASTIFY.install ajoute un hook onRequest', () => {
     const calls = [];
     const app   = { addHook: (name, fn) => calls.push({ name, fn }) };
-    const handler = () => {};
 
-    DRIVERS.FASTIFY.install(app, null, handler);
+    DRIVERS.FASTIFY.install(app, null, () => {});
 
     assert.equal(calls.length, 1);
     assert.equal(calls[0].name, 'onRequest');
@@ -79,7 +107,7 @@ test('FASTIFY.install filtre les routes si fourni', async () => {
     const hooks = [];
     const app   = { addHook: (name, fn) => hooks.push(fn) };
     const calls = [];
-    const handler = async (req, reply) => calls.push(req.url);
+    const handler = async (req) => calls.push(req.url);
 
     DRIVERS.FASTIFY.install(app, [/^\/api$/], handler);
 
@@ -92,61 +120,29 @@ test('FASTIFY.install filtre les routes si fourni', async () => {
     assert.equal(calls.length, 1);
 });
 
-test('ExpressDriver.mountAuthRoutes enregistre /login, /callback et /backchannel-logout', async () => {
-    const routes = [];
-    const app    = {
-        get:  (path, handler) => routes.push({ method: 'GET',  path }),
-        post: (path, handler) => routes.push({ method: 'POST', path }),
-        use:  () => {},
-    };
+// ---- mountAuthRoutes -------------------------------------------------------------
 
-    const sso = {
-        strategies: {
-            authorizationCode: {
-                startLogin:     async () => ({ type: 'redirect', url: '/kc' }),
-                handleCallback: async () => ({ type: 'session',  redirectTo: '/' }),
-            },
-        },
-        backchannel: {
-            handle:       async () => ({ status: 200 }),
-            trackSession: () => {},
-        },
-    };
+test('ExpressDriver.mountAuthRoutes enregistre /login, /callback et /backchannel-logout', () => {
+    const { app, routes } = buildRouteRecorder({ use: () => {} });
 
-    DRIVERS.EXPRESS.mountAuthRoutes(app, sso);
+    DRIVERS.EXPRESS.mountAuthRoutes(app, buildFakeSso());
 
     assert.ok(routes.some(r => r.method === 'GET'  && r.path === '/login'));
     assert.ok(routes.some(r => r.method === 'GET'  && r.path === '/callback'));
     assert.ok(routes.some(r => r.method === 'POST' && r.path === '/backchannel-logout'));
 });
 
-test('FastifyDriver.mountAuthRoutes enregistre /login, /callback et /backchannel-logout', async () => {
-    const routes = [];
-    const app    = {
-        get:  (path, handler) => routes.push({ method: 'GET',  path }),
-        post: (path, handler) => routes.push({ method: 'POST', path }),
-        addHook: () => {},
-    };
+test('FastifyDriver.mountAuthRoutes enregistre /login, /callback et /backchannel-logout', () => {
+    const { app, routes } = buildRouteRecorder({ addHook: () => {} });
 
-    const sso = {
-        strategies: {
-            authorizationCode: {
-                startLogin:     async () => ({ type: 'redirect', url: '/kc' }),
-                handleCallback: async () => ({ type: 'session',  redirectTo: '/' }),
-            },
-        },
-        backchannel: {
-            handle:       async () => ({ status: 200 }),
-            trackSession: () => {},
-        },
-    };
-
-    DRIVERS.FASTIFY.mountAuthRoutes(app, sso);
+    DRIVERS.FASTIFY.mountAuthRoutes(app, buildFakeSso());
 
     assert.ok(routes.some(r => r.method === 'GET'  && r.path === '/login'));
     assert.ok(routes.some(r => r.method === 'GET'  && r.path === '/callback'));
     assert.ok(routes.some(r => r.method === 'POST' && r.path === '/backchannel-logout'));
 });
+
+// ---- createStore -------------------------------------------------------------------
 
 test('ExpressDriver.createStore retourne un store avec get, set, destroy', () => {
     const store = DRIVERS.EXPRESS.createStore();
@@ -218,7 +214,7 @@ test('ExpressDriver.createStore — le reaper garde les sessions non expirées',
     });
 });
 
-test('FastifyDriver.createStore retourne un store avec get, set, destroy et reaper (meme logique que pour Express donc 1 seul test', (t, done) => {
+test('FastifyDriver.createStore retourne un store avec get, set, destroy et reaper (même logique qu\'Express donc 1 seul test)', (t, done) => {
     const store = DRIVERS.FASTIFY.createStore({ reapIntervalMs: 50 });
 
     assert.equal(typeof store.get,     'function');
@@ -239,15 +235,14 @@ test('FastifyDriver.createStore retourne un store avec get, set, destroy et reap
     });
 });
 
+// ---- mountSession ---------------------------------------------------------------------
+
 test('ExpressDriver.mountSession enregistre un middleware de session via app.use', () => {
     const middlewares = [];
-    const app = { use: (mw) => middlewares.push(mw) };
+    const app   = { use: (mw) => middlewares.push(mw) };
     const store = DRIVERS.EXPRESS.createStore();
 
-    DRIVERS.EXPRESS.mountSession(app, {
-        sessionSecret: 'secret',
-        store,
-    });
+    DRIVERS.EXPRESS.mountSession(app, { sessionSecret: 'secret', store });
 
     assert.equal(middlewares.length, 1);
     assert.equal(typeof middlewares[0], 'function');
@@ -277,7 +272,7 @@ test('mountSession avec allowHttp:false configure cookie.secure à true', () => 
 
 test('FastifyDriver.mountSession enregistre cookie, session et formbody', async () => {
     const registered = [];
-    const app = { register: async (plugin, opts) => registered.push({ plugin, opts }) };
+    const app   = { register: async (plugin, opts) => registered.push({ plugin, opts }) };
     const store = DRIVERS.FASTIFY.createStore();
 
     await DRIVERS.FASTIFY.mountSession(app, {
@@ -294,17 +289,14 @@ test('FastifyDriver.mountSession avec allowHttp:true configure cookie.secure à 
     const app = {
         register: async (plugin, opts) => {
             if (opts?.secret) sessionOpts = opts;  // c'est la config session
-        }
+        },
     };
     const store = DRIVERS.FASTIFY.createStore();
-    const fakeCookie  = async () => {};
-    const fakeSession = async () => {};
-    const fakeFormbody = async () => {};
 
     await DRIVERS.FASTIFY.mountSession(
         app,
         { sessionSecret: 'secret', store, allowHttp: true },
-        { cookie: fakeCookie, session: fakeSession, formbody: fakeFormbody }
+        { cookie: async () => {}, session: async () => {}, formbody: async () => {} },
     );
 
     assert.equal(sessionOpts.cookie.secure, false);

@@ -1,11 +1,27 @@
 const { test } = require('node:test');
 const assert   = require('node:assert/strict');
 const createAuthorizationCode = require('../../src/handlers/authCode');
+const { buildFakeAuthClient, makeJwt } = require('../support/builders');
 
-test('createAuthorizationCode retourne un objet avec une méthode authenticate', () => {
+/** Stratégie authCode avec dépendances par défaut, surchargeables par test. */
+function buildStrategy(overrides = {}) {
+    return createAuthorizationCode({
+        client:      buildFakeAuthClient(),
+        config:      {},
+        clientId:    'c',
+        redirectUri: '/callback',
+        ...overrides,
+    });
+}
+
+test('createAuthorizationCode retourne un objet avec authenticate, startLogin et handleCallback', () => {
     const strategy = createAuthorizationCode({});
-    assert.strictEqual(typeof strategy.authenticate, 'function');
+    assert.strictEqual(typeof strategy.authenticate,   'function');
+    assert.strictEqual(typeof strategy.startLogin,     'function');
+    assert.strictEqual(typeof strategy.handleCallback, 'function');
 });
+
+// ---- authenticate -----------------------------------------------------------
 
 test('authenticate redirige vers /login quand la session est vide', async () => {
     const strategy = createAuthorizationCode({});
@@ -16,12 +32,7 @@ test('authenticate redirige vers /login quand la session est vide', async () => 
 });
 
 test('authenticate retourne allow si session.user existe, sans vérifier les rôles', async () => {
-    const strategy = createAuthorizationCode({
-        client: buildFakeAuthClient(),
-        config: {},
-        clientId: 'c',
-        redirectUri: 'http://app/callback',
-    });
+    const strategy = buildStrategy();
 
     const decision = await strategy.authenticate({
         session: { user: { roles: ['reader'], sid: 'abc' } },
@@ -32,112 +43,72 @@ test('authenticate retourne allow si session.user existe, sans vérifier les rô
     assert.deepEqual(decision.principal, { roles: ['reader'], sid: 'abc' });
 });
 
-test('handleCallback retourne allow sans vérifier les rôles', async () => {
-    const fakeTokens = {
-        access_token: 'fake',
-    };
-
-    const strategy = createAuthorizationCode({
-        client: {
-            authorizationCodeGrant: async () => fakeTokens,
-            randomPKCECodeVerifier:        () => 'verifier',
-            calculatePKCECodeChallenge:    async () => 'challenge',
-            randomState:                   () => 'state',
-            buildAuthorizationUrl:         () => new URL('http://kc/auth'),
-        },
-        config:      {},
-        clientId:    'c',
-        redirectUri: 'http://app/callback',
-        _decode: () => ({
-            resource_access: { c: { roles: ['reader'] } },
-            sid: 'kc-sid',
-        }),
-    });
-
-    const session = { pkce: { codeVerifier: 'verifier', state: 'state' } };
-    const decision = await strategy.handleCallback({
-        session,
-        url: new URL('http://app/callback?code=abc&state=state'),
-    });
-
-    assert.equal(decision.type, 'session');
-});
-
-test('createAuthorizationCode retourne un objet avec une méthode startLogin', () => {
-    const strategy = createAuthorizationCode({});
-    assert.strictEqual(typeof strategy.startLogin, 'function');
-});
-
-const {buildFakeAuthClient} = require("../Helper.test")
+// ---- startLogin --------------------------------------------------------------
 
 test('startLogin retourne une décision de type redirect', async () => {
-    const strategy = createAuthorizationCode({
-        client:      buildFakeAuthClient(),
-        config:      {},
-        redirectUri: '/callback',
-    });
+    const strategy = buildStrategy();
     const decision = await strategy.startLogin({ session: {} });
 
     assert.strictEqual(decision.type, 'redirect');
 });
 
 test('startLogin construit l\'url via buildAuthorizationUrl', async () => {
-    const fakeUrl    = new URL('https://kc.example.com/authorize');
-    const strategy   = createAuthorizationCode({
-        client:      buildFakeAuthClient({ buildAuthorizationUrl: () => fakeUrl }),
-        config:      {},
-        redirectUri: '/callback',
+    const fakeUrl  = new URL('https://kc.example.com/authorize');
+    const strategy = buildStrategy({
+        client: buildFakeAuthClient({ buildAuthorizationUrl: () => fakeUrl }),
     });
     const decision = await strategy.startLogin({ session: {} });
 
     assert.strictEqual(decision.url, fakeUrl.href);
 });
 
-
 test('startLogin stocke codeVerifier et state dans la session', async () => {
-    const strategy = createAuthorizationCode({
-        client:      buildFakeAuthClient(),
-        config:      {},
-        redirectUri: '/callback',
-    });
-    const session = {};
+    const strategy = buildStrategy();
+    const session  = {};
     await strategy.startLogin({ session });
 
     assert.strictEqual(session.pkce.codeVerifier, 'verifier-abc');
     assert.strictEqual(session.pkce.state,        'state-123');
 });
 
-
-test('createAuthorizationCode retourne un objet avec une méthode handleCallback', () => {
-    const strategy = createAuthorizationCode({});
-    assert.strictEqual(typeof strategy.handleCallback, 'function');
-});
+// ---- handleCallback -------------------------------------------------------------
 
 test('handleCallback retourne une décision de type session', async () => {
-     const strategy = createAuthorizationCode({
-        client:      buildFakeAuthClient(),
-    });
+    const strategy = buildStrategy();
     const session  = { pkce: { codeVerifier: '', state: '' } };
-    const decision = await strategy.handleCallback({session});
+    const decision = await strategy.handleCallback({ session });
 
     assert.strictEqual(decision.type, 'session');
 });
 
-const {makeJwt} = require('../Helper.test')
-
-test('handleCallback stocke le principal dans la session pour l echange de code & doit la nettoyer ensuite', async () => {
-    const accessToken = makeJwt({
-        sub:              'user-123',
-        resource_access:  { 'mon-app': { roles: ['admin'] } },
+test('handleCallback retourne allow sans vérifier les rôles', async () => {
+    const strategy = buildStrategy({
+        _decode: () => ({
+            resource_access: { c: { roles: ['reader'] } },
+            sid: 'kc-sid',
+        }),
     });
 
-    const strategy = createAuthorizationCode({
+    const session  = { pkce: { codeVerifier: 'verifier-abc', state: 'state-123' } };
+    const decision = await strategy.handleCallback({
+        session,
+        url: new URL('http://app/callback?code=abc&state=state-123'),
+    });
+
+    assert.equal(decision.type, 'session');
+});
+
+test('handleCallback stocke le principal dans la session pour l\'échange de code & doit la nettoyer ensuite', async () => {
+    const accessToken = makeJwt({
+        sub:             'user-123',
+        resource_access: { 'mon-app': { roles: ['admin'] } },
+    });
+
+    const strategy = buildStrategy({
+        clientId: 'mon-app',
         client:   buildFakeAuthClient({
             authorizationCodeGrant: async () => ({ access_token: accessToken }),
         }),
-        config:      {},
-        redirectUri: '/callback',
-        clientId:    'mon-app',
     });
 
     const session = { pkce: { codeVerifier: 'verifier-abc', state: 'state-123' } };

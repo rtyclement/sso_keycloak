@@ -12,7 +12,7 @@ function buildFailingVerify() {
     return (_token, _getKey, _opts, callback) => callback(new Error('invalid signature'));
 }
 
-// Fake sessionStore
+// Fake sessionStore qui trace les sessions détruites
 function buildFakeStore() {
     const destroyed = [];
     return {
@@ -26,21 +26,24 @@ const VALID_DECODED = {
     events: { 'http://schemas.openid.net/event/backchannel-logout': {} },
 };
 
-test('createBackchannel retourne un objet avec handle et trackSession', () => {
-    const bc = createBackchannel({
+/** Handler backchannel avec dépendances par défaut, surchargeables par test. */
+function buildBackchannel(overrides = {}) {
+    return createBackchannel({
         sessionStore: buildFakeStore().store,
         jwksUri:      'https://kc.example.com/certs',
+        ...overrides,
     });
+}
+
+test('createBackchannel retourne un objet avec handle et trackSession', () => {
+    const bc = buildBackchannel();
 
     assert.strictEqual(typeof bc.handle,       'function');
     assert.strictEqual(typeof bc.trackSession, 'function');
 });
 
 test('handle retourne 400 quand logout_token est absent', async () => {
-    const bc = createBackchannel({
-        sessionStore: buildFakeStore().store,
-        jwksUri:      'https://kc.example.com/certs',
-    });
+    const bc = buildBackchannel();
 
     const decision = await bc.handle({ body: {} });
 
@@ -49,11 +52,7 @@ test('handle retourne 400 quand logout_token est absent', async () => {
 });
 
 test('handle retourne 400 quand le token est invalide', async () => {
-    const bc = createBackchannel({
-        sessionStore: buildFakeStore().store,
-        jwksUri:      'https://kc.example.com/certs',
-        _verify:      buildFailingVerify(),
-    });
+    const bc = buildBackchannel({ _verify: buildFailingVerify() });
 
     const decision = await bc.handle({ body: { logout_token: 'mauvais-token' } });
 
@@ -62,10 +61,8 @@ test('handle retourne 400 quand le token est invalide', async () => {
 });
 
 test('handle retourne 400 quand l\'event backchannel-logout est manquant', async () => {
-    const bc = createBackchannel({
-        sessionStore: buildFakeStore().store,
-        jwksUri:      'https://kc.example.com/certs',
-        _verify:      buildFakeVerify({ sid: 'kc-session-abc', events: {} }),
+    const bc = buildBackchannel({
+        _verify: buildFakeVerify({ sid: 'kc-session-abc', events: {} }),
     });
 
     const decision = await bc.handle({ body: { logout_token: 'token' } });
@@ -75,10 +72,8 @@ test('handle retourne 400 quand l\'event backchannel-logout est manquant', async
 });
 
 test('handle retourne 400 quand sid est manquant', async () => {
-    const bc = createBackchannel({
-        sessionStore: buildFakeStore().store,
-        jwksUri:      'https://kc.example.com/certs',
-        _verify:      buildFakeVerify({
+    const bc = buildBackchannel({
+        _verify: buildFakeVerify({
             events: { 'http://schemas.openid.net/event/backchannel-logout': {} },
         }),
     });
@@ -91,9 +86,8 @@ test('handle retourne 400 quand sid est manquant', async () => {
 
 test('handle retourne 200 et détruit la session correspondante', async () => {
     const { store, destroyed } = buildFakeStore();
-    const bc = createBackchannel({
+    const bc = buildBackchannel({
         sessionStore: store,
-        jwksUri:      'https://kc.example.com/certs',
         _verify:      buildFakeVerify(VALID_DECODED),
     });
 
@@ -105,11 +99,7 @@ test('handle retourne 200 et détruit la session correspondante', async () => {
 });
 
 test('handle retourne 200 quand aucune session correspondante n\'est trouvée', async () => {
-    const bc = createBackchannel({
-        sessionStore: buildFakeStore().store,
-        jwksUri:      'https://kc.example.com/certs',
-        _verify:      buildFakeVerify(VALID_DECODED),
-    });
+    const bc = buildBackchannel({ _verify: buildFakeVerify(VALID_DECODED) });
 
     // Aucun trackSession appelé — la map est vide
     const decision = await bc.handle({ body: { logout_token: 'token' } });
