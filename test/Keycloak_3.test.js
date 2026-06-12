@@ -94,3 +94,85 @@ test('Keycloak appelle driver.createStore au constructeur', () => {
 
     assert.ok(createStoreCalled);
 });
+
+test('Keycloak appelle driver.mountSession au premier protect session', async () => {
+    let mountSessionCalled = false;
+    class TestDriver extends DriverContrat {
+        getSession()              { return {}; }
+        getHeaders()              { return {}; }
+        getBody()                 { return {}; }
+        getUrl()                  { return new URL('http://x/'); }
+        getSessionId()            { return 'id'; }
+        setPrincipal()            {}
+        redirect()                {}
+        deny()                    {}
+        ok()                      {}
+        wrap(l)                   { return l; }
+        install()                 {}
+        mountAuthRoutes()         {}
+        createStore()             { return {}; }
+        mountSession()            { mountSessionCalled = true; }
+    }
+
+    const kc = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
+    kc.protect({}, '/dashboard', 'session');
+
+    await kc.ready();
+
+    assert.ok(mountSessionCalled);
+});
+
+test('mountSession n\'est appelé qu\'une seule fois', async () => {
+    let mountSessionCount = 0;
+    class TestDriver extends DriverContrat {
+        getSession()              { return {}; }
+        getHeaders()              { return {}; }
+        getBody()                 { return {}; }
+        getUrl()                  { return new URL('http://x/'); }
+        getSessionId()            { return 'id'; }
+        setPrincipal()            {}
+        redirect()                {}
+        deny()                    {}
+        ok()                      {}
+        wrap(l)                   { return l; }
+        install()                 {}
+        mountAuthRoutes()         {}
+        createStore()             { return {}; }
+        mountSession()            { mountSessionCount++; }
+    }
+
+    const kc = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
+    kc.protect({}, '/dashboard', 'session');
+    kc.protect({}, '/admin',     'session');
+
+    await kc.ready();
+
+    assert.equal(mountSessionCount, 1);
+});
+
+test('mountSession n\'est pas appelé en mode bearer', async () => {
+    let mountSessionCalled = false;
+    class TestDriver extends DriverContrat {
+        getSession()              { return {}; }
+        getHeaders()              { return {}; }
+        getBody()                 { return {}; }
+        getUrl()                  { return new URL('http://x/'); }
+        getSessionId()            { return 'id'; }
+        setPrincipal()            {}
+        redirect()                {}
+        deny()                    {}
+        ok()                      {}
+        wrap(l)                   { return l; }
+        install()                 {}
+        mountAuthRoutes()         {}
+        createStore()             { return {}; }
+        mountSession()            { mountSessionCalled = true; }
+    }
+
+    const kc = new Keycloak(new TestDriver(), { ...VALID_CONFIG, _client: buildFakeClient() });
+    kc.protect({}, '/api', 'bearer');
+
+    await kc.ready();
+
+    assert.ok(!mountSessionCalled);
+});
