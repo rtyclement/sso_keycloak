@@ -26,6 +26,7 @@ class Keycloak {
     #rules = [];
     #ready;
     #authRoutesMounted= false;
+    #store;
 
     constructor(driver, config) {
         if (!driver || !(driver instanceof DriverContrat))
@@ -35,7 +36,8 @@ class Keycloak {
 
         this.#driver = driver;
         this.#config = config;
-        this.#ready = require('./core').createSso(config)
+        this.#store = driver.createStore();
+        this.#ready = require('./core').createSso({...config, sessionStore: this.#store});
     }
 
     protect(app,routes,mode,roles){
