@@ -36,14 +36,12 @@ async function createSso(options = {}) {
             redirectUri:  options.redirectUri,
             sessionStore: options.sessionStore,
             clientId:     options.clientId,
-            requiredRole: options.requiredRole,
         }),
         introspection: createInstrospection({
             introspectUrl:    metadata.introspection_endpoint,
             clientId:         options.introspection?.clientId     ?? options.clientId,
             clientSecret:     options.introspection?.clientSecret ?? options.clientSecret,
             audienceClientId: options.clientId,
-            requiredRole:     options.requiredRole,
         }),
     };
 
