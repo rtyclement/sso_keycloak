@@ -64,7 +64,14 @@ class Keycloak {
         })
         if (mode === 'session' && !this.#authRoutesMounted) {
             this.#authRoutesMounted = true;
-            this.#ready.then(sso => this.#driver.mountAuthRoutes(app, sso));
+            this.#ready.then(sso => {
+                this.#driver.mountSession(app, {
+                    sessionSecret: this.#config.sessionSecret,
+                    store:         this.#store,
+                    allowHttp:     this.#config.allowHttp ?? false,
+                });
+                this.#driver.mountAuthRoutes(app, sso);
+            });
         }
 
         const handler = this.#driver.wrap(async (req,reply,next)=>{
