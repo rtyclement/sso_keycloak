@@ -10,7 +10,6 @@ async function createSso(options = {}) {
     required(options, 'issuerUrl');
     required(options, 'clientId');
     required(options, 'clientSecret');
-    required(options, 'requiredRole');
     const client = options._client ?? realClient;
 
     const discoveryOptions = options.allowHttp

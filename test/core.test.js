@@ -29,13 +29,15 @@ test('createSso échoue si clientSecret est absent', async () => {
     )
 })
 
-test('createSso échoue si requireRole est absent', async () => {
-    await assert.rejects(
-        createSso({
-            issuerUrl:'http://blabla.com', clientId: 'b', clientSecret: 'a', sessionStore:{}
-        }),'/requireRole/' //regex d'erreur
-    )
-})
+test('createSso ne plante pas si requiredRole est absent', async () => {
+    const config = {
+        issuerUrl:    'http://kc/realms/r',
+        clientId:     'c',
+        clientSecret: 's',
+        _client:      buildFakeClient(),
+    };
+    await assert.doesNotReject(() => createSso(config));
+});
 
 // --- Incrément 2 -----------------------//
 
