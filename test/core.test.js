@@ -106,7 +106,7 @@ test('createSso retourne un handler backchannel', async () => {
 
 const {buildFakeFactories} = require("./Helper.test");
 
-test('la factory authorizationCode reçoit clientId, redirectUri, sessionStore et requiredRole', async () => {
+test('la factory authorizationCode reçoit clientId, redirectUri, sessionStore', async () => {
     const f            = buildFakeFactories();
     const sessionStore = { get: () => {}, destroy: () => {} };
 
@@ -122,7 +122,6 @@ test('la factory authorizationCode reçoit clientId, redirectUri, sessionStore e
     assert.strictEqual(deps.clientId,     'mon-app');
     assert.strictEqual(deps.redirectUri,  '/callback');
     assert.strictEqual(deps.sessionStore, sessionStore);
-    assert.strictEqual(deps.requiredRole, 'admin');
 });
 
 test('la factory introspection reçoit l\'endpoint issu des métadonnées', async () => {

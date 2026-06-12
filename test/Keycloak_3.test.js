@@ -176,3 +176,128 @@ test('mountSession n\'est pas appelé en mode bearer', async () => {
 
     assert.ok(!mountSessionCalled);
 });
+test('le handler retourne 403 si le principal n\'a pas le rôle requis', async () => {
+    let installed = null;
+    class TestDriver extends DriverContrat {
+        getSession()              { return {}; }
+        getHeaders()              { return {}; }
+        getBody()                 { return {}; }
+        getUrl()                  { return new URL('http://x/'); }
+        getSessionId()            { return 'id'; }
+        setPrincipal()            {}
+        redirect()                {}
+        deny(reply, s)            { reply.status = s; }
+        ok()                      {}
+        wrap(l)                   { return l; }
+        install(app, p, h)        { installed = h; }
+        mountAuthRoutes()         {}
+        mountSession()            {}
+        createStore()             { return {}; }
+    }
+
+    const kc = new Keycloak(new TestDriver(), {
+        ...VALID_CONFIG,
+        _client: buildFakeClient(),
+        _factories: {
+            introspection: () => ({
+                authenticate: async () => ({
+                    type:      'allow',
+                    principal: { roles: ['reader'] },  // n'a pas 'admin'
+                }),
+            }),
+            authorizationCode: () => ({ authenticate: async () => ({ type: 'allow', principal: {} }) }),
+            backchannel:       () => ({ handle: async () => ({}), trackSession: () => {} }),
+        },
+    });
+
+    kc.protect({}, '/api', 'bearer', ['admin']);  // exige 'admin'
+
+    const reply = {};
+    await installed({ url: '/api', headers: {} }, reply, () => {});
+
+    assert.equal(reply.status, 403);
+});
+
+test('le handler laisse passer si le principal a le rôle requis', async () => {
+    let installed = null;
+    class TestDriver extends DriverContrat {
+        getSession()              { return {}; }
+        getHeaders()              { return {}; }
+        getBody()                 { return {}; }
+        getUrl()                  { return new URL('http://x/'); }
+        getSessionId()            { return 'id'; }
+        setPrincipal()            {}
+        redirect()                {}
+        deny()                    {}
+        ok()                      {}
+        wrap(l)                   { return l; }
+        install(app, p, h)        { installed = h; }
+        mountAuthRoutes()         {}
+        mountSession()            {}
+        createStore()             { return {}; }
+    }
+
+    const kc = new Keycloak(new TestDriver(), {
+        ...VALID_CONFIG,
+        _client: buildFakeClient(),
+        _factories: {
+            introspection: () => ({
+                authenticate: async () => ({
+                    type:      'allow',
+                    principal: { roles: ['admin'] },
+                }),
+            }),
+            authorizationCode: () => ({ authenticate: async () => ({ type: 'allow', principal: {} }) }),
+            backchannel:       () => ({ handle: async () => ({}), trackSession: () => {} }),
+        },
+    });
+
+    kc.protect({}, '/api', 'bearer', ['admin']);
+
+    let nextCalled = false;
+    await installed({ url: '/api', headers: {} }, {}, () => { nextCalled = true; });
+
+    assert.ok(nextCalled);
+});
+
+test('le handler laisse passer si aucun rôle n\'est requis', async () => {
+    let installed = null;
+    class TestDriver extends DriverContrat {
+        getSession()              { return {}; }
+        getHeaders()              { return {}; }
+        getBody()                 { return {}; }
+        getUrl()                  { return new URL('http://x/'); }
+        getSessionId()            { return 'id'; }
+        setPrincipal()            {}
+        redirect()                {}
+        deny()                    {}
+        ok()                      {}
+        wrap(l)                   { return l; }
+        install(app, p, h)        { installed = h; }
+        mountAuthRoutes()         {}
+        mountSession()            {}
+        createStore()             { return {}; }
+    }
+
+    const kc = new Keycloak(new TestDriver(), {
+        ...VALID_CONFIG,
+        _client: buildFakeClient(),
+        _factories: {
+            introspection: () => ({
+                authenticate: async () => ({
+                    type:      'allow',
+                    principal: { roles: [] },
+                }),
+            }),
+            authorizationCode: () => ({ authenticate: async () => ({ type: 'allow', principal: {} }) }),
+            backchannel:       () => ({ handle: async () => ({}), trackSession: () => {} }),
+        },
+    });
+
+    kc.protect({}, '/api', 'bearer');  // pas de rôle requis
+
+    let nextCalled = false;
+    await installed({ url: '/api', headers: {} }, {}, () => { nextCalled = true; });
+
+    assert.ok(nextCalled);
+});
