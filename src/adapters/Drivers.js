@@ -29,11 +29,20 @@ class ExpressDriver extends DriverContrat {
         });
     }
     mountAuthRoutes(app, sso) {
-    const adapter = new (require('./Adapter'))(this);
+        const adapter = new (require('./Adapter'))(this);
 
-    app.get ('/login',              adapter.loginRoute(sso.strategies.authorizationCode));
-    app.get ('/callback',           adapter.callbackRoute(sso.strategies.authorizationCode, sso.backchannel));
-    app.post('/backchannel-logout', adapter.backchannelRoute(sso.backchannel));
+        app.get ('/login',              adapter.loginRoute(sso.strategies.authorizationCode));
+        app.get ('/callback',           adapter.callbackRoute(sso.strategies.authorizationCode, sso.backchannel));
+        app.post('/backchannel-logout', adapter.backchannelRoute(sso.backchannel));
+    }
+
+    createStore() {
+    const data = new Map();
+    return {
+        get:     (id, cb) => cb(null, data.get(id) ?? null),
+        set:     (id, session, cb) => { data.set(id, session); cb(null); },
+        destroy: (id, cb) => { data.delete(id); cb(null); },
+    };
 }
 }
 
@@ -72,6 +81,7 @@ class FastifyDriver extends DriverContrat {
         app.get ('/callback',           adapter.callbackRoute(sso.strategies.authorizationCode, sso.backchannel));
         app.post('/backchannel-logout', adapter.backchannelRoute(sso.backchannel));
     }
+    
 }
 
 const DRIVERS = Object.freeze({

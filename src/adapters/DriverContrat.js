@@ -11,7 +11,8 @@
  * @property {(reply: any) => void}                  ok            Répond 200
  * @property {(logic: Function) => Function}         wrap          Adapte la logique au modèle d'exécution du framework
  * @property {(app: any, patterns: RegExp[], handler: Function) => void} install  Installe le handler sur l'app
- * @property {(app: any, sso: Function) => void} mountAuthRoutes  créer les routes HTTP pour le mode session de protect
+ * @property {(app: any, sso: Function) => void}     mountAuthRoutes  créer les routes HTTP pour le mode session de protect
+ * @property {()=> Object}                           createStore   Crée un memory store avec TTL pour éviter les fuites mémoires
 */
 
 /**
@@ -33,6 +34,7 @@ class DriverContrat {
     wrap(logic)                { throw new Error("[Driver] wrap() not implemented"); }
     install(app, patterns, handler) { throw new Error("[Driver] install() not implemented"); }
     mountAuthRoutes(app, sso) { throw new Error("[Driver] mountAuthRoutes() not implemented"); }
+    createStore(){ throw new Error("[Driver] createStore() not implemented"); }
 }
 
 module.exports = DriverContrat;
