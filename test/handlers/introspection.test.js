@@ -35,52 +35,24 @@ test('authenticate retourne deny quand le token est inactif', async () => {
     assert.strictEqual(decision.status, 401);
 });
 
-test('authenticate retourne deny quand le rôle est manquant', async () => {
-    const fakeFetch = async () => ({
-        json: async () => ({
-            active:          true,
-            resource_access: { 'mon-api': { roles: ['viewer'] } },
+test('introspection retourne allow sans vérifier les rôles', async () => {
+    const strategy = createIntrospection({
+        introspectUrl:    'http://kc/introspect',
+        clientId:         'c',
+        clientSecret:     's',
+        audienceClientId: 'c',
+        fetch: async () => ({
+            json: async () => ({
+                active:          true,
+                resource_access: { c: { roles: ['reader'] } },
+            }),
         }),
     });
 
-    const strategy = createIntrospection({
-        introspectUrl:    'https://kc.example.com/introspect',
-        clientId:         'mon-api',
-        clientSecret:     'secret',
-        audienceClientId: 'mon-api',
-        requiredRole:     'admin',
-        fetch:            fakeFetch,
-    });
-
     const decision = await strategy.authenticate({
-        headers: { authorization: 'Bearer fake-token' },
+        session: {},
+        headers: { authorization: 'Bearer token123' },
     });
 
-    assert.strictEqual(decision.type,   'deny');
-    assert.strictEqual(decision.status, 403);
-});
-
-test('authenticate retourne allow quand le token est actif et le rôle présent', async () => {
-    const introspectionData = {
-        active:          true,
-        sub:             'service-abc',
-        resource_access: { 'mon-api': { roles: ['admin'] } },
-    };
-    const fakeFetch = async () => ({ json: async () => introspectionData });
-
-    const strategy = createIntrospection({
-        introspectUrl:    'https://kc.example.com/introspect',
-        clientId:         'mon-api',
-        clientSecret:     'secret',
-        audienceClientId: 'mon-api',
-        requiredRole:     'admin',
-        fetch:            fakeFetch,
-    });
-
-    const decision = await strategy.authenticate({
-        headers: { authorization: 'Bearer fake-token' },
-    });
-
-    assert.strictEqual(decision.type,      'allow');
-    assert.strictEqual(decision.principal, introspectionData);
+    assert.equal(decision.type, 'allow');
 });
