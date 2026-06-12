@@ -147,3 +147,36 @@ test('FastifyDriver.mountAuthRoutes enregistre /login, /callback et /backchannel
     assert.ok(routes.some(r => r.method === 'GET'  && r.path === '/callback'));
     assert.ok(routes.some(r => r.method === 'POST' && r.path === '/backchannel-logout'));
 });
+
+test('ExpressDriver.createStore retourne un store avec get, set, destroy', () => {
+    const store = DRIVERS.EXPRESS.createStore();
+
+    assert.equal(typeof store.get,     'function');
+    assert.equal(typeof store.set,     'function');
+    assert.equal(typeof store.destroy, 'function');
+});
+
+test('ExpressDriver.createStore — set puis get retourne la session', (t, done) => {
+    const store = DRIVERS.EXPRESS.createStore();
+
+    store.set('sid1', { user: 'alice' }, () => {
+        store.get('sid1', (err, session) => {
+            assert.equal(err, null);
+            assert.deepEqual(session, { user: 'alice' });
+            done();
+        });
+    });
+});
+
+test('ExpressDriver.createStore — destroy supprime la session', (t, done) => {
+    const store = DRIVERS.EXPRESS.createStore();
+
+    store.set('sid2', { user: 'bob' }, () => {
+        store.destroy('sid2', () => {
+            store.get('sid2', (err, session) => {
+                assert.equal(session, null);
+                done();
+            });
+        });
+    });
+});
