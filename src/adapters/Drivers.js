@@ -37,24 +37,38 @@ class ExpressDriver extends DriverContrat {
     }
 
     createStore({ reapIntervalMs = 10 * 60 * 1000 } = {}) {
-    const data = new Map();
-    const reaper = setInterval(() => {
-        const now = Date.now();
-        for (const [id, session] of data.entries()) {
-            const expires = session?.cookie?.expires;
-            if (expires && new Date(expires).getTime() < now) {
-                data.delete(id);
-            }
-        }
-    }, reapIntervalMs);
+        const session = require('express-session');
+        const data    = new Map();
 
-    reaper.unref();
-    return {
-        get:     (id, cb) => cb(null, data.get(id) ?? null),
-        set:     (id, session, cb) => { data.set(id, session); cb(null); },
-        destroy: (id, cb) => { data.delete(id); cb(null); },
-    };
-}
+        class ReapingStore extends session.Store {
+            get(id, cb)       { cb(null, data.get(id) ?? null); }
+            set(id, sess, cb) { data.set(id, sess); cb(null); }
+            destroy(id, cb)   { data.delete(id); cb(null); }
+        }
+
+        const store  = new ReapingStore();
+        const reaper = setInterval(() => {
+            const now = Date.now();
+            for (const [id, sess] of data.entries()) {
+                const expires = sess?.cookie?.expires;
+                if (expires && new Date(expires).getTime() < now)
+                    data.delete(id);
+            }
+        }, reapIntervalMs);
+
+        reaper.unref();
+        return store;
+    }
+
+    mountSession(app, { sessionSecret, store, allowHttp },sessionFactory = require('express-session')) {
+        app.use(sessionFactory({
+            secret:            sessionSecret,
+            resave:            false,
+            saveUninitialized: false,
+            store,
+            cookie:            { secure: !allowHttp, httpOnly: true, sameSite: 'lax' },
+        }));
+    }
 }
 
 class FastifyDriver extends DriverContrat {

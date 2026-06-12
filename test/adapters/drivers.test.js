@@ -252,3 +252,25 @@ test('ExpressDriver.mountSession enregistre un middleware de session via app.use
     assert.equal(middlewares.length, 1);
     assert.equal(typeof middlewares[0], 'function');
 });
+
+test('mountSession avec allowHttp:true configure cookie.secure à false', () => {
+    let capturedOptions = null;
+    const app   = { use: () => {} };
+    const store = DRIVERS.EXPRESS.createStore();
+    const fakeSession = (opts) => { capturedOptions = opts; return () => {}; };
+
+    DRIVERS.EXPRESS.mountSession(app, { sessionSecret: 's', store, allowHttp: true }, fakeSession);
+
+    assert.equal(capturedOptions.cookie.secure, false);
+});
+
+test('mountSession avec allowHttp:false configure cookie.secure à true', () => {
+    let capturedOptions = null;
+    const app   = { use: () => {} };
+    const store = DRIVERS.EXPRESS.createStore();
+    const fakeSession = (opts) => { capturedOptions = opts; return () => {}; };
+
+    DRIVERS.EXPRESS.mountSession(app, { sessionSecret: 's', store, allowHttp: false }, fakeSession);
+
+    assert.equal(capturedOptions.cookie.secure, true);
+});

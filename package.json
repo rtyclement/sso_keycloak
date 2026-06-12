@@ -16,9 +16,12 @@
     "test": "node --test"
   },
   "dependencies": {
-    "fastify-plugin": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "jwks-rsa": "^4.0.1",
     "openid-client": "^6.8.4"
+  },
+  "devDependencies": {
+    "express-session": "^1.19.0",
+    "fastify-plugin": "^6.0.0"
   }
 }
