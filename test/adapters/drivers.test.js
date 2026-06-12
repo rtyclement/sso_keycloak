@@ -238,3 +238,17 @@ test('FastifyDriver.createStore retourne un store avec get, set, destroy et reap
         }, 150);
     });
 });
+
+test('ExpressDriver.mountSession enregistre un middleware de session via app.use', () => {
+    const middlewares = [];
+    const app = { use: (mw) => middlewares.push(mw) };
+    const store = DRIVERS.EXPRESS.createStore();
+
+    DRIVERS.EXPRESS.mountSession(app, {
+        sessionSecret: 'secret',
+        store,
+    });
+
+    assert.equal(middlewares.length, 1);
+    assert.equal(typeof middlewares[0], 'function');
+});
