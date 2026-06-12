@@ -36,8 +36,19 @@ class ExpressDriver extends DriverContrat {
         app.post('/backchannel-logout', adapter.backchannelRoute(sso.backchannel));
     }
 
-    createStore() {
+    createStore({ reapIntervalMs = 10 * 60 * 1000 } = {}) {
     const data = new Map();
+    const reaper = setInterval(() => {
+        const now = Date.now();
+        for (const [id, session] of data.entries()) {
+            const expires = session?.cookie?.expires;
+            if (expires && new Date(expires).getTime() < now) {
+                data.delete(id);
+            }
+        }
+    }, reapIntervalMs);
+
+    reaper.unref();
     return {
         get:     (id, cb) => cb(null, data.get(id) ?? null),
         set:     (id, session, cb) => { data.set(id, session); cb(null); },
