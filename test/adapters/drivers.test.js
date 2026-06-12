@@ -180,3 +180,40 @@ test('ExpressDriver.createStore — destroy supprime la session', (t, done) => {
         });
     });
 });
+
+test('ExpressDriver.createStore — le reaper supprime les sessions expirées', (t, done) => {
+    const store = DRIVERS.EXPRESS.createStore({ reapIntervalMs: 50 });  // intervalle court pour le test
+
+    const expiredSession = {
+        user:   'alice',
+        cookie: { expires: new Date(Date.now() - 1000) },  // expirée il y a 1 seconde
+    };
+
+    store.set('sid-expired', expiredSession, () => {
+        // attend que le reaper passe
+        setTimeout(() => {
+            store.get('sid-expired', (err, session) => {
+                assert.equal(session, null);  // supprimée par le reaper
+                done();
+            });
+        }, 150);  // attend 150ms > 50ms d'intervalle
+    });
+});
+
+test('ExpressDriver.createStore — le reaper garde les sessions non expirées', (t, done) => {
+    const store = DRIVERS.EXPRESS.createStore({ reapIntervalMs: 50 });
+
+    const validSession = {
+        user:   'bob',
+        cookie: { expires: new Date(Date.now() + 60000) },  // expire dans 1 minute
+    };
+
+    store.set('sid-valid', validSession, () => {
+        setTimeout(() => {
+            store.get('sid-valid', (err, session) => {
+                assert.ok(session !== null);  // toujours là
+                done();
+            });
+        }, 150);
+    });
+});
