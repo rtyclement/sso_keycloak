@@ -19,7 +19,6 @@ KEYCLOAK_CLIENT_ID="votre-client"
 KEYCLOAK_CLIENT_SECRET="votre-secret"
 KEYCLOAK_REDIRECT_URI="http://votre-app/callback"
 SESSION_SECRET="votre-secret-de-session"
-KEYCLOAK_ALLOW_HTTP=true // Optionnel => Uniquement en Developpement 
 ```
 
 ---

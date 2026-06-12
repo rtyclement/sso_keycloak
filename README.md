@@ -204,9 +204,9 @@ L'`Adapter` expose quatre méthodes — `guard`, `loginRoute`, `callbackRoute`, 
 
 ## A lire également
 
-- [Exemples d'implémentation dans votre application Node.js](./Example.md)
-- [Sources OpenID Connect utilisées](./OpenID_sources.md)
-- [Détail des stratégies](./Stratégie.md)
+- [Exemples d'implémentation dans votre application Node.js](./doc/Example.md)
+- [Sources OpenID Connect utilisées](./doc/OpenID_sources.md)
+- [Détail des stratégies](./doc/Stratégie.md)
 
 ---
 
