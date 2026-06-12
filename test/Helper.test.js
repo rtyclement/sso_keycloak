@@ -8,7 +8,6 @@ const BASE_OPTIONS = {
     clientId:     'mon-app',
     clientSecret: 'secret-123',
     sessionStore: {},
-    requiredRole: 'admin',
 };
 
 function buildFakeClient({ onDiscovery } = {}) {

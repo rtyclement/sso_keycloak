@@ -15,22 +15,52 @@ test('authenticate redirige vers /login quand la session est vide', async () => 
     assert.strictEqual(decision.url,  '/login');
 });
 
-test('authenticate retourne allow quand la session a un utilisateur avec le bon rôle', async () => {
-    const user     = { sub: 'user-123', roles: ['admin'] };
-    const strategy = createAuthorizationCode({ requiredRole: 'admin' });
-    const decision = await strategy.authenticate({ session: { user } });
+test('authenticate retourne allow si session.user existe, sans vérifier les rôles', async () => {
+    const strategy = createAuthorizationCode({
+        client: buildFakeAuthClient(),
+        config: {},
+        clientId: 'c',
+        redirectUri: 'http://app/callback',
+    });
 
-    assert.strictEqual(decision.type,      'allow');
-    assert.strictEqual(decision.principal, user);
+    const decision = await strategy.authenticate({
+        session: { user: { roles: ['reader'], sid: 'abc' } },
+        headers: {},
+    });
+
+    assert.equal(decision.type, 'allow');
+    assert.deepEqual(decision.principal, { roles: ['reader'], sid: 'abc' });
 });
 
-test('authenticate retourne deny quand la session a un utilisateur avec le mauvais rôle', async () => {
-    const user     = { sub: 'user-123', roles: ['user'] };
-    const strategy = createAuthorizationCode({ requiredRole: 'admin' });
-    const decision = await strategy.authenticate({ session: { user } });
+test('handleCallback retourne allow sans vérifier les rôles', async () => {
+    const fakeTokens = {
+        access_token: 'fake',
+    };
 
-    assert.strictEqual(decision.type,      'deny');
-    assert.strictEqual(decision.status, 403);
+    const strategy = createAuthorizationCode({
+        client: {
+            authorizationCodeGrant: async () => fakeTokens,
+            randomPKCECodeVerifier:        () => 'verifier',
+            calculatePKCECodeChallenge:    async () => 'challenge',
+            randomState:                   () => 'state',
+            buildAuthorizationUrl:         () => new URL('http://kc/auth'),
+        },
+        config:      {},
+        clientId:    'c',
+        redirectUri: 'http://app/callback',
+        _decode: () => ({
+            resource_access: { c: { roles: ['reader'] } },
+            sid: 'kc-sid',
+        }),
+    });
+
+    const session = { pkce: { codeVerifier: 'verifier', state: 'state' } };
+    const decision = await strategy.handleCallback({
+        session,
+        url: new URL('http://app/callback?code=abc&state=state'),
+    });
+
+    assert.equal(decision.type, 'session');
 });
 
 test('createAuthorizationCode retourne un objet avec une méthode startLogin', () => {
