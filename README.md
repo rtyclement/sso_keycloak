@@ -1,4 +1,4 @@
-# sso_keycloak
+# [sso_keycloak](https://github.com/rtyclement/sso_keycloak)
 
 Module Node.js interne de protection d'applications et d'APIs via Keycloak. Il remplace `keycloak-connect` (officiellement déprécié) en s'appuyant sur `openid-client` v6 — la bibliothèque de référence recommandée par la spécification OpenID Connect.
 
@@ -204,9 +204,9 @@ L'`Adapter` expose quatre méthodes — `guard`, `loginRoute`, `callbackRoute`, 
 
 ## A lire également
 
-- [Exemples d'implémentation dans votre application Node.js](./doc/Example.md)
-- [Sources OpenID Connect utilisées](./doc/OpenID_sources.md)
-- [Détail des stratégies](./doc/Stratégie.md)
+- [Exemples d'implémentation dans votre application Node.js](https://github.com/rtyclement/sso_keycloak/blob/main/doc/Example.md)
+- [Sources OpenID Connect utilisées](https://github.com/rtyclement/sso_keycloak/blob/main/doc/OpenID_sources.md)
+- [Détail des stratégies](https://github.com/rtyclement/sso_keycloak/blob/main/doc/Strat%C3%A9gie.md)
 
 ---
 
