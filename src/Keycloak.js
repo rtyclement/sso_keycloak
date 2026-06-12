@@ -86,7 +86,15 @@ class Keycloak {
                 headers: this.#driver.getHeaders(req),
             });
             req._ssoHandled = true;
-            if (decision.type === 'allow')    { this.#driver.setPrincipal(req, decision.principal); return next(); }
+            if (decision.type === 'allow')    {
+                if (match.roles.length > 0) {
+                    const principalRoles = decision.principal?.roles ?? [];
+                    const hasRole = match.roles.some(r => principalRoles.includes(r));
+                    if (!hasRole) return this.#driver.deny(reply, 403);
+                }
+                this.#driver.setPrincipal(req, decision.principal);
+                return next();
+            }
             if (decision.type === 'redirect') return this.#driver.redirect(reply, decision.url);
             if (decision.type === 'deny')     return this.#driver.deny(reply, decision.status);
             return next();
