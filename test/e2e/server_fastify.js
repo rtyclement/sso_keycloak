@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: ['.test.env'] });
 
 const fastify = require('fastify')({ logger: false });
 const kc      = require('./middleware/keycloak_fastify');

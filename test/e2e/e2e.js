@@ -10,7 +10,7 @@
  *        d. kill du serveur
  *   4. deux verdicts finaux (express / fastify), code de sortie ≠ 0 si échec.
  */
-require('dotenv').config();
+require('dotenv').config({ path: ['.test.env'] });
 
 const { spawn }         = require('node:child_process');
 const path             = require('node:path');
