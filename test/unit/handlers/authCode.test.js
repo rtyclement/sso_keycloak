@@ -121,3 +121,42 @@ test('handleCallback stocke le principal dans la session pour l\'échange de cod
     assert.deepStrictEqual(session.user.roles, ['admin']);
     assert.strictEqual(session.pkce, undefined);
 });
+
+// Le sid sert de clé au backchannel logout. La spec OIDC le porte dans
+// l'ID token — l'access token n'est pas garanti de le contenir.
+test('handleCallback prend le sid depuis l\'id_token quand l\'access_token ne l\'a pas', async () => {
+    const strategy = buildStrategy({
+        client: buildFakeAuthClient({
+            authorizationCodeGrant: async () => ({
+                access_token: makeJwt({ sub: 'user-123' }),          // pas de sid
+                id_token:     makeJwt({ sid: 'kc-sid-du-id-token' }),
+            }),
+        }),
+    });
+
+    const session = { pkce: { codeVerifier: 'verifier-abc', state: 'state-123' } };
+    await strategy.handleCallback({
+        session,
+        url: new URL('https://app.example.com/callback?code=abc&state=state-123'),
+    });
+
+    assert.strictEqual(session.user.sid, 'kc-sid-du-id-token');
+});
+
+test('handleCallback garde le sid de l\'access_token en l\'absence d\'id_token', async () => {
+    const strategy = buildStrategy({
+        client: buildFakeAuthClient({
+            authorizationCodeGrant: async () => ({
+                access_token: makeJwt({ sub: 'user-123', sid: 'kc-sid-access' }),
+            }),
+        }),
+    });
+
+    const session = { pkce: { codeVerifier: 'verifier-abc', state: 'state-123' } };
+    await strategy.handleCallback({
+        session,
+        url: new URL('https://app.example.com/callback?code=abc&state=state-123'),
+    });
+
+    assert.strictEqual(session.user.sid, 'kc-sid-access');
+});

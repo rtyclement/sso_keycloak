@@ -30,7 +30,10 @@ function createAuthorizationCode(deps) {
             );
             const claims    = jwt.decode(tokens.access_token);
             const roles     = claims?.resource_access?.[deps.clientId]?.roles ?? [];
-            const principal = { ...claims, roles };
+            // Le sid (clé du backchannel logout) est porté par l'ID token
+            // selon la spec OIDC ; l'access token n'est pas garanti de l'avoir.
+            const idClaims  = tokens.id_token ? jwt.decode(tokens.id_token) : null;
+            const principal = { ...claims, roles, sid: idClaims?.sid ?? claims?.sid };
 
             ctx.session.user = principal;
             delete ctx.session.pkce;

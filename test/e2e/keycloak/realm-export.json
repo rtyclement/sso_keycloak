@@ -36,6 +36,7 @@
         "+"
       ],
       "attributes": {
+        "backchannel.logout.url": "http://host.docker.internal:9090/backchannel-logout",
         "backchannel.logout.session.required": "true",
         "post.logout.redirect.uris": "+"
       }

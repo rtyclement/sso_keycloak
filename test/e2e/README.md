@@ -22,14 +22,15 @@ Le runner [e2e.js](e2e.js) orchestre, pour **chaque** framework (un serveur à l
 |---|---|---|
 | **bearer**  | password-grant Keycloak → access token → `GET /api/info` avec `Authorization: Bearer` ; puis sans token | 200 + rôle `api-access`, et 401 sans token |
 | **session** | `GET /dashboard` → 302 `/login` → page Keycloak (scrapée) → POST identifiants → `/callback` → `GET /dashboard` avec cookie | 200 + rôle `dashboard-access` |
+| **backchannel** | login session → logout du user via l'admin API Keycloak → Keycloak POSTe le `logout_token` sur `/backchannel-logout` | session app révoquée : `GET /dashboard` → 302 |
 
 Sortie finale : deux verdicts `VALIDE` / `INVALIDE` avec le code de chaque sous-test.
 Code de sortie ≠ 0 si un sous-test échoue.
 
 ```
 ┌──────────────────────────── RÉSULTATS ────────────────────────────
-│ EXPRESS  → VALIDE     (bearer:ok  session:ok)
-│ FASTIFY  → VALIDE     (bearer:ok  session:ok)
+│ EXPRESS  → VALIDE     (bearer:ok  session:ok  backchannel:ok)
+│ FASTIFY  → VALIDE     (bearer:ok  session:ok  backchannel:ok)
 └───────────────────────────────────────────────────────────────────
 ```
 
@@ -49,10 +50,18 @@ Code de sortie ≠ 0 si un sous-test échoue.
 |---|---|
 | [docker-compose.yml](docker-compose.yml) | Keycloak 26.1 + import realm + healthcheck |
 | [keycloak/realm-export.json](keycloak/realm-export.json) | realm de test importé |
-| [.env](.env) | configuration (URLs, secret, identifiants de test) |
+| [.test.env](.test.env) | configuration (URLs, secret, identifiants de test) |
 | [middleware/](middleware/) | instanciation `Keycloak` (express / fastify) |
 | [server_express.js](server_express.js) / [server_fastify.js](server_fastify.js) | serveurs sous test |
-| [e2e.js](e2e.js) | orchestrateur de test |
+| [e2e.js](e2e.js) | **orchestrateur** : démarre Keycloak, joue chaque framework, verdicts |
+| [config.js](config.js) | configuration centrale dérivée de `.test.env` |
+| [support/](support/) | primitives réutilisables : `http`, `flow`, `cookieClient`, `reporter` |
+| [infra/](infra/) | systèmes externes : `keycloak` (conteneur), `appServer`, `keycloakAdmin` |
+| [subtests/](subtests/) | les scénarios testés : `bearer`, `session`, `backchannel` |
+
+Le code e2e est organisé en couches : `config` (quoi) → `support` (outils de test) →
+`infra` (pilotage des systèmes externes) → `subtests` (les scénarios) → `e2e.js`
+(orchestration). Chaque fichier fait une chose et tient en quelques dizaines de lignes.
 
 ## Notes (pièges rencontrés)
 
@@ -60,3 +69,15 @@ Code de sortie ≠ 0 si un sous-test échoue.
   de test ignore volontairement le flag `Secure` pour pouvoir les renvoyer en HTTP local.
 - Le mode session exige que `KEYCLOAK_REDIRECT_URI` pointe **exactement** sur le port
   du serveur (`APP_PORT`), sinon l'échange code→token est rejeté par Keycloak.
+- Le backchannel logout part **du conteneur Keycloak vers l'app sur l'hôte** : le
+  client du realm pointe sur `http://host.docker.internal:9090/backchannel-logout`
+  et le compose déclare `host.docker.internal:host-gateway`. Un sign-out instantané
+  dans la console admin ne prouve **pas** que l'appel backchannel a réussi — les
+  échecs ne sont visibles que dans `docker logs kc_e2e`.
+- Express et Fastify écoutent **tour à tour sur le même port 9090**. Keycloak garde
+  sa connexion backchannel en keep-alive ; après le passage à Fastify, le premier
+  POST peut tomber sur la connexion morte du process Express (Keycloak ne retente
+  pas un POST). Le sous-test backchannel réessaie donc une fois — le premier échec
+  purge la connexion poolée. C'est un artefact du banc (deux serveurs, un port),
+  pas un défaut de la lib : en production les logouts sont espacés et Keycloak
+  revalide la connexion avant réemploi.

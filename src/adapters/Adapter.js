@@ -48,6 +48,9 @@ class Adapter {
         return this._wrap(async (req, reply, next) => {
             const decision = await backchannel.handle({ body: this._driver.getBody(req) });
             if (decision.status === 200) return this._driver.ok(reply);
+            // Un rejet est invisible des deux côtés (Keycloak n'affiche rien,
+            // la session app reste simplement active) : on le rend diagnosticable.
+            console.warn(`[sso_keycloak] backchannel logout rejeté (${decision.status}): ${decision.reason ?? 'raison inconnue'}`);
             return this._driver.deny(reply, decision.status);
         });
     }

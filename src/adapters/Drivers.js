@@ -1,5 +1,28 @@
 const DriverContrat = require('./DriverContrat');
 
+// Keycloak poste le logout_token du backchannel en
+// application/x-www-form-urlencoded. Express ne parse aucun body par défaut
+// et la lib ne peut pas exiger que l'application hôte ait monté
+// express.urlencoded() : la route doit savoir lire son propre body.
+// Ne lit le flux que s'il est encore intact (aucun parser ne l'a consommé).
+function ensureFormBody(req) {
+    const alreadyConsumed = req._body === true || req.readableEnded === true;
+    const alreadyParsed   = req.body && Object.keys(req.body).length > 0;
+    const contentType     = (req.headers?.['content-type'] ?? '').split(';')[0].trim();
+    if (alreadyConsumed || alreadyParsed || contentType !== 'application/x-www-form-urlencoded') {
+        return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+        let raw = '';
+        req.on('data', (chunk) => { raw += chunk; });
+        req.on('end', () => {
+            req.body = Object.fromEntries(new URLSearchParams(raw));
+            resolve();
+        });
+        req.on('error', () => resolve());
+    });
+}
+
 class ExpressDriver extends DriverContrat {
     getSession(req)            { return req.session; }
     getHeaders(req)            { return req.headers; }
@@ -13,7 +36,7 @@ class ExpressDriver extends DriverContrat {
 
     wrap(logic) {
         return (req, res, next) => {
-            Promise.resolve(logic(req, res, next)).catch(next);
+            return Promise.resolve(logic(req, res, next)).catch(next);
         };
     }
 
@@ -37,7 +60,16 @@ class ExpressDriver extends DriverContrat {
 
         app.get ('/login',              lazy((a, s) => a.loginRoute(s.strategies.authorizationCode)));
         app.get ('/callback',           lazy((a, s) => a.callbackRoute(s.strategies.authorizationCode, s.backchannel)));
-        app.post('/backchannel-logout', lazy((a, s) => a.backchannelRoute(s.backchannel)));
+        // Keycloak poste le logout_token en urlencoded : la route lit son propre
+        // body (ensureFormBody), l'app n'a pas à monter express.urlencoded().
+        // Pas de `Connection: close` : Keycloak réutilise la connexion (keep-alive)
+        // pour envoyer un logout par session active — la fermer casserait la
+        // livraison des logout suivants d'un même « logout all ».
+        app.post('/backchannel-logout', this.wrap(async (req, res, next) => {
+            await ensureFormBody(req);
+            const sso = await ready;
+            return adapter.backchannelRoute(sso.backchannel)(req, res, next);
+        }));
     }
 
     createStore({ reapIntervalMs = 10 * 60 * 1000 } = {}) {
@@ -114,7 +146,13 @@ class FastifyDriver extends DriverContrat {
 
         app.get ('/login',              lazy((a, s) => a.loginRoute(s.strategies.authorizationCode)));
         app.get ('/callback',           lazy((a, s) => a.callbackRoute(s.strategies.authorizationCode, s.backchannel)));
-        app.post('/backchannel-logout', lazy((a, s) => a.backchannelRoute(s.backchannel)));
+        // Fastify parse déjà le body urlencoded (@fastify/formbody, monté par
+        // mountSession). Comme côté Express, pas de `Connection: close` : voir
+        // le commentaire dans ExpressDriver.mountAuthRoutes.
+        app.post('/backchannel-logout', this.wrap(async (req, reply, next) => {
+            const sso = await ready;
+            return adapter.backchannelRoute(sso.backchannel)(req, reply, next);
+        }));
     }
     createStore({ reapIntervalMs = 10 * 60 * 1000 } = {}) {
         const data = new Map();

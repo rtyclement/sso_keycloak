@@ -12,6 +12,11 @@ services:
       - --import-realm
     ports:
       - "8080:8080"
+    # Le backchannel logout part DU conteneur VERS l'app sur l'hôte :
+    # host.docker.internal doit résoudre la gateway (requis sur Linux,
+    # déjà natif sur Docker Desktop).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: "${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}"
       KC_BOOTSTRAP_ADMIN_PASSWORD: "${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin}"

@@ -142,6 +142,95 @@ test('FastifyDriver.mountAuthRoutes enregistre /login, /callback et /backchannel
     assert.ok(routes.some(r => r.method === 'POST' && r.path === '/backchannel-logout'));
 });
 
+// ---- backchannel-logout : parsing du body -------------------------------------------
+// Keycloak poste le logout_token en application/x-www-form-urlencoded. La route
+// montée par le driver doit le parser elle-même : on ne peut pas exiger que
+// l'application hôte ait monté un parser urlencoded.
+
+const { Readable } = require('node:stream');
+
+/** Requête POST urlencoded brute (flux non parsé), comme l'envoie Keycloak. */
+function buildRawFormReq(raw, overrides = {}) {
+    const req = Readable.from([raw]);
+    req.headers = { 'content-type': 'application/x-www-form-urlencoded' };
+    req.session = {};
+    return Object.assign(req, overrides);
+}
+
+/** Réponse Express minimale pour la route backchannel. */
+function buildExpressRes() {
+    return { setHeader: () => {}, status: () => ({ end: () => {} }) };
+}
+
+/** Monte les routes d'auth Express et retourne le handler POST /backchannel-logout. */
+function mountExpressBackchannel(backchannel) {
+    const posts = {};
+    const app = {
+        get:  () => {},
+        post: (path, handler) => { posts[path] = handler; },
+        use:  () => {},
+    };
+    DRIVERS.EXPRESS.mountAuthRoutes(app, Promise.resolve({
+        strategies: { authorizationCode: {} },
+        backchannel,
+    }));
+    return posts['/backchannel-logout'];
+}
+
+test('EXPRESS /backchannel-logout parse un body urlencoded brut (aucun parser applicatif)', async () => {
+    let received = null;
+    const handler = mountExpressBackchannel({
+        handle: async (ctx) => { received = ctx.body; return { status: 200 }; },
+    });
+
+    await handler(buildRawFormReq('logout_token=tok-123'), buildExpressRes(), () => {});
+
+    assert.deepEqual(received, { logout_token: 'tok-123' });
+});
+
+test('EXPRESS /backchannel-logout re-parse le flux si un parser non-urlencoded a laissé body vide (cas express.json)', async () => {
+    let received = null;
+    const handler = mountExpressBackchannel({
+        handle: async (ctx) => { received = ctx.body; return { status: 200 }; },
+    });
+
+    // express.json() sur un POST urlencoded : req.body = {} mais flux intact
+    const req = buildRawFormReq('logout_token=tok-456', { body: {} });
+    await handler(req, buildExpressRes(), () => {});
+
+    assert.deepEqual(received, { logout_token: 'tok-456' });
+});
+
+test('EXPRESS /backchannel-logout respecte un body déjà parsé par l\'application', async () => {
+    let received = null;
+    const handler = mountExpressBackchannel({
+        handle: async (ctx) => { received = ctx.body; return { status: 200 }; },
+    });
+
+    // express.urlencoded() est monté côté app : body parsé, flux consommé
+    const req = buildRawFormReq('', {
+        body:  { logout_token: 'tok-789' },
+        _body: true,
+    });
+    await handler(req, buildExpressRes(), () => {});
+
+    assert.deepEqual(received, { logout_token: 'tok-789' });
+});
+
+test('EXPRESS /backchannel-logout ne lit pas le flux si le content-type n\'est pas urlencoded', async () => {
+    let received = null;
+    const handler = mountExpressBackchannel({
+        handle: async (ctx) => { received = ctx.body; return { status: 400 }; },
+    });
+
+    const req = buildRawFormReq('{"logout_token":"tok"}', {
+        headers: { 'content-type': 'application/json' },
+    });
+    await handler(req, buildExpressRes(), () => {});
+
+    assert.equal(received?.logout_token, undefined);
+});
+
 // ---- createStore -------------------------------------------------------------------
 
 test('ExpressDriver.createStore retourne un store avec get, set, destroy', () => {

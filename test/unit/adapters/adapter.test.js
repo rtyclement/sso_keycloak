@@ -118,3 +118,37 @@ test('backchannelRoute appelle deny quand handle retourne 400', async () => {
 
     assert.strictEqual(calls.status, 400);
 });
+
+// Un backchannel logout rejeté est invisible pour Keycloak ET pour l'app
+// (la session reste active sans erreur apparente) : la lib doit le signaler.
+test('backchannelRoute loggue la raison quand handle rejette', async () => {
+    const { adapter } = buildAdapter();
+    const backchannel = { handle: async () => ({ status: 400, reason: 'invalid_token' }) };
+
+    const warnings = [];
+    const originalWarn = console.warn;
+    console.warn = (...args) => warnings.push(args.join(' '));
+    try {
+        await adapter.backchannelRoute(backchannel)(buildReq(), {});
+    } finally {
+        console.warn = originalWarn;
+    }
+
+    assert.ok(warnings.some(w => w.includes('invalid_token')), `warn manquant: ${warnings}`);
+});
+
+test('backchannelRoute ne loggue rien sur un 200', async () => {
+    const { adapter } = buildAdapter();
+    const backchannel = { handle: async () => ({ status: 200 }) };
+
+    const warnings = [];
+    const originalWarn = console.warn;
+    console.warn = (...args) => warnings.push(args.join(' '));
+    try {
+        await adapter.backchannelRoute(backchannel)(buildReq(), {});
+    } finally {
+        console.warn = originalWarn;
+    }
+
+    assert.equal(warnings.length, 0);
+});
