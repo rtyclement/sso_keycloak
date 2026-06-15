@@ -10,6 +10,10 @@
   ],
   "license": "ISC",
   "author": "Clément Roty",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rtyclement/sso_keycloak"
+  },
   "type": "commonjs",
   "main": "src/index.js",
   "scripts": {
